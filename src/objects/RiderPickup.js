@@ -98,18 +98,30 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
   collect() {
     if (this.collected) return false;
     this.collected = true;
+
+    // Tear down satellites immediately so nothing can latch onto the Zoox.
     this.rider?.destroy();
     this.rider = null;
     this.holo?.destroy();
     this.holo = null;
     this.laneMark?.destroy();
     this.laneMark = null;
-    this.body.enable = false;
+    this.shadow?.destroy();
+    this.shadow = null;
+
+    // Keep scrolling left while fading, then fully destroy the kiosk.
+    // (Disabling the body without destroying froze the Z icon on the player.)
+    if (this.body) {
+      this.body.enable = true;
+      this.setVelocityX(-420);
+    }
     this.scene.tweens.add({
       targets: this,
-      alpha: 0.25,
-      scale: 0.8,
-      duration: 180,
+      alpha: 0,
+      scale: 0.55,
+      y: this.y - 36,
+      duration: 220,
+      onComplete: () => this.destroy(),
     });
     return true;
   }
