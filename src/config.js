@@ -6,7 +6,7 @@ export const GAME_TITLE = 'ZOOX FUTURE SF';
 export const VEHICLE_CATEGORY = 'ROBOTAXI';
 export const VEHICLE_NAME = 'ZOOX';
 export const TAGLINE = 'The Future is for Riders';
-export const MENU_BLURB = 'Pick up riders. Dodge traffic. Own the neon city.';
+export const MENU_BLURB = 'PICK UP RIDERS. DODGE TRAFFIC. OWN THE NEON CITY.';
 
 /** Logical gameplay resolution (16:9 arcade viewport). */
 export const GAME_WIDTH = 1280;

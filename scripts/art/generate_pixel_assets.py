@@ -51,10 +51,10 @@ C = {
     "white": (250, 252, 255, 255),
     "glass": (14, 20, 38, 255),
     "glass2": (24, 36, 62, 255),
-    "zoox": (70, 165, 255, 255),
-    "zoox2": (45, 115, 210, 255),
-    "zoox3": (25, 70, 150, 255),
-    "cabin": (165, 95, 255, 170),
+    "zoox": (236, 240, 245, 255),
+    "zoox2": (210, 216, 224, 255),
+    "zoox3": (18, 20, 28, 255),
+    "cabin": (10, 16, 28, 230),
     "moon": (240, 242, 255, 255),
     "cloud": (150, 130, 200, 170),
     "cloud2": (115, 100, 165, 125),
@@ -338,6 +338,40 @@ def make_skyline():
         for k in range(5):
             hline(img, x + 5 - k, base - 35 - k, k * 2 + 1, C["white"])
 
+    # Vertical neon blade signs (JP / Chinatown vibe)
+    rect(img, 58, base - 95, 7, 52, C["black"])
+    rect(img, 59, base - 94, 5, 50, C["green"])
+    text_vert(img, 60, base - 90, "SF", C["white"])
+    glow(img, 61, base - 70, 8, C["green"], 70)
+
+    rect(img, 510, base - 88, 7, 48, C["black"])
+    rect(img, 511, base - 87, 5, 46, C["red"])
+    text_vert(img, 512, base - 84, "CHINA", C["yellow"])
+    glow(img, 513, base - 64, 8, C["red"], 65)
+
+    # Lombard zigzag cue
+    rect(img, 560, base - 55, 36, 12, C["black"])
+    text(img, 562, base - 52, "LOMBARD", C["green"], 3)
+    for i, dy in enumerate([0, 2, 0, 2, 0, 2]):
+        hline(img, 562 + i * 5, base - 40 + dy, 5, C["green"])
+    glow(img, 578, base - 48, 8, C["green"], 45)
+
+    # Cable car
+    rect(img, 350, base - 22, 28, 12, C["red"])
+    rect(img, 352, base - 19, 8, 6, C["yellow"])
+    rect(img, 362, base - 19, 10, 6, C["yellow"])
+    rect(img, 352, base - 10, 5, 5, C["black"])
+    rect(img, 370, base - 10, 5, 5, C["black"])
+    hline(img, 340, base - 8, 55, C["steel"])
+
+    # Bay Bridge spans (right)
+    for i in range(0, 90, 2):
+        y = base - 55 - int(10 * math.sin(i / 18))
+        put(img, 545 + i, y, C["magenta"])
+        put(img, 545 + i, y + 8, (255, 90, 180, 180))
+    for bx in (555, 595, 625):
+        rect(img, bx, base - 70, 3, 40, C["pink"])
+
     save(img, "skyline/distant.png")
 
 
@@ -574,59 +608,60 @@ def make_road_reflection():
 # ---------------- ZOOX ----------------
 
 def draw_zoox(frame=0):
-    img = new(88, 52)
-    # soft headlight / underglow spills (reference lighting)
-    glow(img, 72, 28, 16, C["cyan"], 70)
-    glow(img, 72, 30, 10, C["white"], 40)
-    glow(img, 44, 44, 24, C["cyan"], 90)
-    glow(img, 18, 28, 10, C["red"], 45)
+    """White/black robotaxi with cyan neon underglow (menu reference)."""
+    img = new(96, 56)
+    # soft headlight / underglow spills
+    glow(img, 78, 30, 16, C["cyan"], 70)
+    glow(img, 78, 32, 10, C["white"], 40)
+    glow(img, 48, 48, 26, C["cyan"], 100)
+    glow(img, 20, 30, 10, C["red"], 40)
 
     # ground shadow
-    rect(img, 18, 44, 54, 4, (0, 0, 0, 70))
+    rect(img, 20, 48, 58, 4, (0, 0, 0, 70))
 
-    # body
-    rect(img, 16, 14, 56, 24, C["zoox"])
-    rect(img, 18, 11, 52, 6, C["zoox2"])
-    hline(img, 20, 10, 48, C["zoox3"])
-    vline(img, 16, 14, 24, C["zoox2"])
-    vline(img, 71, 14, 24, C["zoox2"])
-    rect(img, 17, 36, 54, 3, C["zoox3"])
+    # white boxy body + black lower trim (reference)
+    rect(img, 16, 14, 62, 26, C["zoox"])
+    rect(img, 18, 11, 58, 6, C["zoox2"])
+    hline(img, 20, 10, 54, C["zoox3"])
+    vline(img, 16, 14, 26, C["zoox3"])
+    vline(img, 77, 14, 26, C["zoox3"])
+    rect(img, 17, 30, 60, 10, C["zoox3"])  # black lower panel
+    hline(img, 20, 28, 54, C["cyan"])       # cyan belt line
 
     # glass
-    rect(img, 20, 17, 48, 14, C["glass"])
-    rect(img, 22, 19, 16, 10, C["cabin"])
-    rect(img, 50, 19, 16, 10, C["cabin"])
-    hline(img, 22, 18, 14, (190, 225, 255, 80))
-    vline(img, 44, 16, 20, (18, 40, 80, 230))
-    vline(img, 45, 17, 18, (90, 170, 255, 55))
+    rect(img, 20, 16, 52, 12, C["glass"])
+    rect(img, 22, 18, 18, 8, C["cabin"])
+    rect(img, 50, 18, 20, 8, C["cabin"])
+    hline(img, 22, 17, 16, (0, 245, 255, 90))
+    hline(img, 50, 17, 18, (0, 245, 255, 90))
+    vline(img, 46, 15, 18, C["zoox3"])
 
-    # sensors
-    rect(img, 38, 6, 12, 5, C["slate"])
-    rect(img, 40, 5, 8, 2, C["steel"])
-    put(img, 41, 4, C["cyan"])
-    put(img, 46, 4, C["magenta"])
-    glow(img, 41, 4, 3, C["cyan"], 90)
-    glow(img, 46, 4, 3, C["magenta"], 90)
-    rect(img, 12, 20, 4, 9, C["slate"])
-    rect(img, 72, 20, 4, 9, C["slate"])
+    # roof lidar / sensors — cyan neon
+    rect(img, 40, 5, 16, 6, C["zoox3"])
+    rect(img, 42, 4, 12, 3, C["steel"])
+    put(img, 44, 3, C["cyan"])
+    put(img, 52, 3, C["cyan"])
+    glow(img, 48, 4, 6, C["cyan"], 110)
+    rect(img, 12, 20, 4, 9, C["zoox3"])
+    rect(img, 80, 20, 4, 9, C["zoox3"])
     put(img, 13, 22, C["cyan"])
-    put(img, 73, 22, C["cyan"])
+    put(img, 81, 22, C["cyan"])
 
     # lights
-    rect(img, 70, 24, 6, 3, C["white"])
-    rect(img, 70, 28, 6, 3, C["yellow"])
-    rect(img, 14, 24, 3, 6, C["red"])
-    put(img, 14, 25, C["pink"])
+    rect(img, 76, 32, 6, 4, C["white"])
+    rect(img, 76, 36, 6, 3, C["yellow"])
+    rect(img, 14, 32, 3, 6, C["red"])
+    put(img, 14, 33, C["pink"])
     if frame % 2:
-        put(img, 69, 21, C["amber"])
-        put(img, 16, 21, C["amber"])
+        put(img, 75, 22, C["amber"])
+        put(img, 16, 22, C["amber"])
 
-    text(img, 28, 33, "ZOOX", C["white"], 4)
+    text(img, 30, 34, "ZOOX", C["cyan"], 4)
 
     # wheels
-    wy = 38 + (frame % 2)
-    for wx in (22, 56):
-        rect(img, wx - 1, 36, 11, 2, C["zoox3"])
+    wy = 42 + (frame % 2)
+    for wx in (24, 62):
+        rect(img, wx - 1, 40, 11, 2, C["zoox3"])
         rect(img, wx, wy, 10, 10, C["black"])
         rect(img, wx + 1, wy + 1, 8, 8, C["slate"])
         if frame % 2 == 0:
@@ -837,22 +872,73 @@ def make_ui():
 
 
 def make_menu_banner():
-    img = new(400, 220)
-    sky = Image.open(ROOT / "backgrounds" / "sky.png").resize((400, 220), Image.NEAREST)
+    """Full-bleed neon SF night plate used under the start menu UI."""
+    # Native 426x240 then upscaled x3 → 1278x720 (near 1280x720)
+    W, H = 426, 240
+    img = new(W, H)
+    sky = Image.open(ROOT / "backgrounds" / "sky.png").resize((W, H), Image.NEAREST)
     img.alpha_composite(sky, (0, 0))
-    clouds = Image.open(ROOT / "backgrounds" / "clouds.png").resize((400, 90), Image.NEAREST)
-    img.alpha_composite(clouds, (0, 20))
-    distant = Image.open(ROOT / "skyline" / "distant.png").resize((400, 120), Image.NEAREST)
-    img.alpha_composite(distant, (0, 46))
-    mid = Image.open(ROOT / "skyline" / "midground.png").resize((400, 110), Image.NEAREST)
-    img.alpha_composite(mid, (0, 78))
-    road = Image.open(ROOT / "roads" / "road.png").resize((400, 55), Image.NEAREST)
-    img.alpha_composite(road, (0, 165))
-    for x in range(50):
-        a = int((1 - x / 50) * 100)
-        vline(img, x, 0, 220, (6, 8, 22, a))
-        vline(img, 399 - x, 0, 220, (6, 8, 22, a))
+    clouds = Image.open(ROOT / "backgrounds" / "clouds.png").resize((W, 70), Image.NEAREST)
+    img.alpha_composite(clouds, (0, 12))
+    distant = Image.open(ROOT / "skyline" / "distant.png").resize((W, 110), Image.NEAREST)
+    img.alpha_composite(distant, (0, 36))
+    mid = Image.open(ROOT / "skyline" / "midground.png").resize((W, 100), Image.NEAREST)
+    img.alpha_composite(mid, (0, 82))
+    road = Image.open(ROOT / "roads" / "road.png").resize((W, 70), Image.NEAREST)
+    img.alpha_composite(road, (0, 170))
+    refl = Image.open(ROOT / "roads" / "reflections.png").resize((W, 70), Image.NEAREST)
+    img.alpha_composite(refl, (0, 170))
+
+    # Soft center readability veil (keeps title/buttons legible)
+    for x in range(W):
+        t = abs(x - W / 2) / (W * 0.42)
+        if t < 1:
+            a = int((1 - t) * 70)
+            vline(img, x, 0, H, (5, 8, 22, a))
+    for y in range(28):
+        a = int((1 - y / 28) * 90)
+        hline(img, 0, y, W, (5, 8, 22, a))
+        hline(img, 0, H - 1 - y, W, (5, 8, 22, a))
+
+    # Extra neon bloom accents + landmark signs matching the mock
+    glow(img, 70, 100, 18, C["green"], 55)
+    glow(img, 300, 90, 16, C["red"], 50)
+    glow(img, 360, 70, 22, C["magenta"], 40)
+    glow(img, 390, 40, 20, C["moon"], 35)
+
+    # Vertical green "SF" blade (left) — stands in for JP neon
+    rect(img, 18, 70, 10, 70, C["black"])
+    rect(img, 19, 71, 8, 68, C["green"])
+    text_vert(img, 21, 78, "SF", C["white"])
+    glow(img, 23, 105, 12, C["green"], 80)
+
+    # Pier 39 sign
+    rect(img, 250, 95, 52, 16, C["black"])
+    rect(img, 251, 96, 50, 14, C["red"])
+    text(img, 255, 99, "PIER39", C["white"], 4)
+    glow(img, 276, 103, 12, C["red"], 70)
+
+    # Chinatown blade
+    rect(img, 320, 78, 10, 62, C["black"])
+    rect(img, 321, 79, 8, 60, C["red"])
+    text_vert(img, 323, 84, "CHINA", C["yellow"])
+    glow(img, 325, 108, 12, C["red"], 70)
+
+    # Lombard sign
+    rect(img, 350, 118, 48, 14, C["black"])
+    rect(img, 351, 119, 46, 12, C["green"])
+    text(img, 354, 122, "LOMBARD", C["white"], 3)
+    for i, dy in enumerate([0, 2, 0, 2, 0, 2]):
+        hline(img, 354 + i * 6, 136 + dy, 5, C["green"])
+    glow(img, 374, 125, 10, C["green"], 55)
+
     save(img, "ui/menu_bg.png")
+    # Convenience alias for tooling / Expo preview (already upscaled by save)
+    (ROOT / "backgrounds").mkdir(parents=True, exist_ok=True)
+    Image.open(ROOT / "ui" / "menu_bg.png").save(ROOT / "backgrounds" / "sf_night_bg.png", "PNG")
+    Image.open(ROOT / "skyline" / "distant.png").save(ROOT / "backgrounds" / "sf_skyline.png", "PNG")
+    print("wrote backgrounds/sf_night_bg.png (alias)")
+    print("wrote backgrounds/sf_skyline.png (alias)")
 
 
 def main():
