@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { ASSET_KEYS, LANE_Y } from '../config.js';
 
 /**
- * Neon kiosk + waiting rider pickup station.
+ * Neon kiosk + waiting rider — wide pickup hitbox for mobile fairness.
  */
 export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
   /**
@@ -21,34 +21,40 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
 
     this.setOrigin(0.5, 1);
     this.setDepth(16 + laneIndex);
-    this.setScale(0.62);
+    this.setScale(0.7);
     this.body.setAllowGravity(false);
     this.body.setImmovable(true);
-    this.body.setSize(this.width * 0.7, this.height * 0.55);
-    this.body.setOffset(this.width * 0.15, this.height * 0.4);
+    // Generous pickup window so rides don't feel pixel-perfect.
+    this.body.setSize(this.width * 1.15, this.height * 0.7);
+    this.body.setOffset(-this.width * 0.08, this.height * 0.25);
 
     const riderKey = Phaser.Utils.Array.GetRandom(
       ASSET_KEYS.RIDERS.filter((k) => scene.textures.exists(k)),
     );
 
     this.rider = scene.add
-      .image(x - 22, LANE_Y[laneIndex] - 4, riderKey)
+      .image(x - 24, LANE_Y[laneIndex] - 4, riderKey)
       .setOrigin(0.5, 1)
-      .setScale(0.62)
+      .setScale(0.7)
       .setDepth(17 + laneIndex);
 
     this.shadow = scene.add
       .image(x, LANE_Y[laneIndex] + 8, ASSET_KEYS.SHADOW)
       .setDepth(15 + laneIndex)
-      .setScale(0.7, 0.55)
+      .setScale(0.8, 0.55)
       .setAlpha(0.55);
 
     this.holo = scene.add
       .image(x + 2, LANE_Y[laneIndex] - this.displayHeight + 8, ASSET_KEYS.PICKUP_SPARK)
       .setDepth(19)
-      .setScale(0.7)
-      .setAlpha(0.9)
+      .setScale(0.85)
+      .setAlpha(0.95)
       .setBlendMode(Phaser.BlendModes.ADD);
+
+    // Bright lane marker under pickup so it's easy to aim for.
+    this.laneMark = scene.add.rectangle(x, LANE_Y[laneIndex] + 10, 70, 10, 0x00f0ff, 0.22)
+      .setDepth(14)
+      .setStrokeStyle(2, 0x00f0ff, 0.65);
 
     scene.tweens.add({
       targets: this.holo,
@@ -61,8 +67,16 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
 
     scene.tweens.add({
       targets: this.rider,
-      angle: { from: -4, to: 4 },
-      duration: 280,
+      angle: { from: -6, to: 6 },
+      duration: 260,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    scene.tweens.add({
+      targets: this.laneMark,
+      alpha: { from: 0.15, to: 0.4 },
+      duration: 450,
       yoyo: true,
       repeat: -1,
     });
@@ -75,9 +89,10 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
 
   preUpdate(time, delta) {
     super.preUpdate(time, delta);
-    if (this.rider) this.rider.x = this.x - 22;
+    if (this.rider) this.rider.x = this.x - 24;
     if (this.holo) this.holo.x = this.x + 2;
     if (this.shadow) this.shadow.x = this.x;
+    if (this.laneMark) this.laneMark.x = this.x;
   }
 
   collect() {
@@ -87,10 +102,13 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
     this.rider = null;
     this.holo?.destroy();
     this.holo = null;
+    this.laneMark?.destroy();
+    this.laneMark = null;
+    this.body.enable = false;
     this.scene.tweens.add({
       targets: this,
-      alpha: 0.3,
-      scale: 0.85,
+      alpha: 0.25,
+      scale: 0.8,
       duration: 180,
     });
     return true;
@@ -104,6 +122,7 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
     this.rider?.destroy();
     this.holo?.destroy();
     this.shadow?.destroy();
+    this.laneMark?.destroy();
     super.destroy(fromScene);
   }
 }

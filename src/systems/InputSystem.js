@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
-import { KEYS } from '../config.js';
 
 /**
- * Keyboard + swipe + mobile button input bridge.
+ * Keyboard + swipe input. Mobile buttons call handlers directly (not via events).
  */
 export class InputSystem {
   /**
@@ -13,6 +12,8 @@ export class InputSystem {
     this.scene = scene;
     this.handlers = handlers;
     this.swipeStartY = null;
+    this.swipeStartX = null;
+    this.cooldownMs = 0;
 
     const keyboard = scene.input.keyboard;
     if (keyboard) {
@@ -25,30 +26,45 @@ export class InputSystem {
     }
 
     scene.input.on('pointerdown', (pointer) => {
-      // Ignore presses on control gutters (left lane buttons / right minimap+pause).
-      if (pointer.x < 160 || pointer.x > scene.scale.width - 160) return;
+      // Ignore UI gutters (lane buttons left, pause/minimap right).
+      if (pointer.x < 220 || pointer.x > scene.scale.width - 180) return;
       this.swipeStartY = pointer.y;
+      this.swipeStartX = pointer.x;
     });
 
     scene.input.on('pointerup', (pointer) => {
       if (this.swipeStartY == null) return;
       const dy = pointer.y - this.swipeStartY;
+      const dx = pointer.x - (this.swipeStartX ?? pointer.x);
       this.swipeStartY = null;
-      if (Math.abs(dy) < 36) return;
-      if (dy < 0) this.handlers.onLaneUp?.();
-      else this.handlers.onLaneDown?.();
+      this.swipeStartX = null;
+      // Prefer vertical swipes; ignore mostly-horizontal drags.
+      if (Math.abs(dy) < 28 || Math.abs(dy) < Math.abs(dx)) return;
+      if (dy < 0) this.tryLaneUp();
+      else this.tryLaneDown();
     });
-
-    scene.events.on('mobile-lane-up', () => this.handlers.onLaneUp?.());
-    scene.events.on('mobile-lane-down', () => this.handlers.onLaneDown?.());
-    scene.events.on('mobile-pause', () => this.handlers.onPause?.());
   }
 
-  update() {
-    if (this.keyUp && Phaser.Input.Keyboard.JustDown(this.keyUp)) this.handlers.onLaneUp?.();
-    if (this.keyW && Phaser.Input.Keyboard.JustDown(this.keyW)) this.handlers.onLaneUp?.();
-    if (this.keyDown && Phaser.Input.Keyboard.JustDown(this.keyDown)) this.handlers.onLaneDown?.();
-    if (this.keyS && Phaser.Input.Keyboard.JustDown(this.keyS)) this.handlers.onLaneDown?.();
+  tryLaneUp() {
+    if (this.cooldownMs > 0) return;
+    this.cooldownMs = 120;
+    this.handlers.onLaneUp?.();
+  }
+
+  tryLaneDown() {
+    if (this.cooldownMs > 0) return;
+    this.cooldownMs = 120;
+    this.handlers.onLaneDown?.();
+  }
+
+  /** @param {number} delta */
+  update(delta = 16) {
+    this.cooldownMs = Math.max(0, this.cooldownMs - delta);
+
+    if (this.keyUp && Phaser.Input.Keyboard.JustDown(this.keyUp)) this.tryLaneUp();
+    if (this.keyW && Phaser.Input.Keyboard.JustDown(this.keyW)) this.tryLaneUp();
+    if (this.keyDown && Phaser.Input.Keyboard.JustDown(this.keyDown)) this.tryLaneDown();
+    if (this.keyS && Phaser.Input.Keyboard.JustDown(this.keyS)) this.tryLaneDown();
     if (this.keyPause && Phaser.Input.Keyboard.JustDown(this.keyPause)) this.handlers.onPause?.();
     if (this.keyStart && Phaser.Input.Keyboard.JustDown(this.keyStart)) this.handlers.onStart?.();
   }

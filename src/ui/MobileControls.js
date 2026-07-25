@@ -1,40 +1,85 @@
 import { ASSET_KEYS } from '../config.js';
 
 /**
- * Thumb controls on the LEFT so the reference-style minimap keeps the bottom-right.
+ * Large thumb-friendly lane controls.
+ * Uses oversized hit Zones + pointerdown so taps always register on mobile/WebView.
  */
 export class MobileControls {
-  /** @param {Phaser.Scene} scene */
-  constructor(scene) {
+  /**
+   * @param {Phaser.Scene} scene
+   * @param {{ onLaneUp: Function, onLaneDown: Function, onPause: Function }} handlers
+   */
+  constructor(scene, handlers) {
     this.scene = scene;
-    const { height } = scene.scale;
+    this.handlers = handlers;
+    const { width, height } = scene.scale;
 
-    const makeBtn = (x, y, label, event, tint) => {
-      const img = scene.add.image(x, y, ASSET_KEYS.BUTTON)
-        .setDisplaySize(110, 56)
-        .setScrollFactor(0)
-        .setDepth(110)
-        .setInteractive({ useHandCursor: true });
-      if (tint) img.setTint(tint);
+    // Keep UI above world / particles / radar.
+    const DEPTH = 1000;
 
-      const text = scene.add.text(x, y, label, {
-        fontFamily: '"Courier New", monospace',
-        fontSize: '20px',
-        color: '#050816',
-      }).setOrigin(0.5).setDepth(111).setScrollFactor(0);
+    this.up = this.makeLaneButton(120, height - 168, 'UP', handlers.onLaneUp, DEPTH);
+    this.down = this.makeLaneButton(120, height - 72, 'DOWN', handlers.onLaneDown, DEPTH);
+    this.pause = this.makeLaneButton(width - 100, 78, 'PAUSE', handlers.onPause, DEPTH, 0xff2bd6);
 
-      img.on('pointerdown', () => img.setAlpha(0.7));
-      img.on('pointerup', () => {
-        img.setAlpha(1);
-        scene.events.emit(event);
+    // Ensure UI receives input even when overlapping other objects.
+    scene.input.setTopOnly(true);
+  }
+
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @param {string} label
+   * @param {Function} onPress
+   * @param {number} depth
+   * @param {number} [tint]
+   */
+  makeLaneButton(x, y, label, onPress, depth, tint) {
+    const hitW = 160;
+    const hitH = 88;
+
+    // Invisible generous hit target (most important for phones).
+    const zone = this.scene.add.zone(x, y, hitW, hitH)
+      .setScrollFactor(0)
+      .setDepth(depth + 2)
+      .setInteractive({ useHandCursor: true });
+
+    const img = this.scene.add.image(x, y, ASSET_KEYS.BUTTON)
+      .setDisplaySize(140, 72)
+      .setScrollFactor(0)
+      .setDepth(depth)
+      .setAlpha(0.92);
+    if (tint) img.setTint(tint);
+
+    const text = this.scene.add.text(x, y, label, {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '26px',
+      color: '#050816',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1).setScrollFactor(0);
+
+    const press = () => {
+      img.setAlpha(0.5);
+      onPress?.();
+      this.scene.time.delayedCall(90, () => {
+        if (img.active) img.setAlpha(0.92);
       });
-      img.on('pointerout', () => img.setAlpha(1));
-
-      return { img, text };
     };
 
-    this.up = makeBtn(86, height - 150, 'UP', 'mobile-lane-up');
-    this.down = makeBtn(86, height - 70, 'DOWN', 'mobile-lane-down');
-    this.pause = makeBtn(scene.scale.width - 96, 86, 'PAUSE', 'mobile-pause', 0xff2bd6);
+    // pointerdown is reliable on iOS Safari / Expo WebView; pointerup often misses.
+    zone.on('pointerdown', (pointer) => {
+      pointer?.event?.preventDefault?.();
+      press();
+    });
+
+    // Soft idle pulse so controls read as tappable.
+    this.scene.tweens.add({
+      targets: img,
+      alpha: { from: 0.85, to: 1 },
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    return { zone, img, text };
   }
 }

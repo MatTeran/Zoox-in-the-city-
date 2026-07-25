@@ -14,35 +14,36 @@ export const GAME_HEIGHT = 720;
 
 export const LANE_COUNT = 3;
 /** Y centers for the three traffic lanes (road sits in lower third, reference-style). */
-export const LANE_Y = [520, 580, 640];
+export const LANE_Y = [515, 575, 635];
 
-export const PLAYER_X = 260;
+export const PLAYER_X = 250;
 export const STARTING_LIVES = 3;
 
 export const SCORE = {
-  PASSIVE_PER_SECOND: 12,
+  PASSIVE_PER_SECOND: 10,
   RIDER_BONUS: 300,
-  NEAR_MISS_BONUS: 50,
+  NEAR_MISS_BONUS: 75,
   STREAK_MULTIPLIER_STEP: 0.25,
   HIGH_SCORE_KEY: 'zoox_future_sf_high_score',
 };
 
 export const SPEED = {
-  BASE_SCROLL: 240,
-  MAX_SCROLL: 560,
-  RAMP_PER_SECOND: 5,
-  TRAFFIC_MIN: 280,
-  TRAFFIC_MAX: 620,
+  BASE_SCROLL: 180,
+  MAX_SCROLL: 420,
+  RAMP_PER_SECOND: 2.2,
+  TRAFFIC_MIN: 220,
+  TRAFFIC_MAX: 480,
 };
 
 export const SPAWN = {
-  TRAFFIC_START_MS: 900,
-  TRAFFIC_MIN_MS: 480,
-  RIDER_START_MS: 2200,
-  RIDER_MIN_MS: 1400,
+  TRAFFIC_START_MS: 1600,
+  TRAFFIC_MIN_MS: 750,
+  RIDER_START_MS: 1800,
+  RIDER_MIN_MS: 1100,
 };
 
-export const INVINCIBLE_MS = 1400;
+/** Longer forgiveness window after a hit. */
+export const INVINCIBLE_MS = 2200;
 
 export const COLORS = {
   ELECTRIC_CYAN: 0x00f0ff,

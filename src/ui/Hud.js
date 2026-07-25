@@ -17,7 +17,7 @@ export class Hud {
     this.bar = scene.add.image(0, 0, ASSET_KEYS.HUD_BAR)
       .setOrigin(0, 0)
       .setDisplaySize(w, 52)
-      .setDepth(100)
+      .setDepth(900)
       .setScrollFactor(0);
 
     const style = {
@@ -26,21 +26,21 @@ export class Hud {
       color: '#ffffff',
     };
 
-    this.levelText = scene.add.text(24, 16, 'LEVEL 1', style).setDepth(101).setScrollFactor(0);
-    this.scoreText = scene.add.text(180, 16, 'SCORE 000000', style).setDepth(101).setScrollFactor(0);
-    this.ridersText = scene.add.text(420, 16, 'RIDERS 0', style).setDepth(101).setScrollFactor(0);
-    this.timeText = scene.add.text(600, 16, 'TIME 0:00', style).setDepth(101).setScrollFactor(0);
+    this.levelText = scene.add.text(24, 16, 'LEVEL 1', style).setDepth(901).setScrollFactor(0);
+    this.scoreText = scene.add.text(180, 16, 'SCORE 000000', style).setDepth(901).setScrollFactor(0);
+    this.ridersText = scene.add.text(420, 16, 'RIDERS 0', style).setDepth(901).setScrollFactor(0);
+    this.timeText = scene.add.text(600, 16, 'TIME 0:00', style).setDepth(901).setScrollFactor(0);
     this.streakText = scene.add.text(780, 16, 'STREAK 0', {
       ...style,
       color: '#ffd84d',
-    }).setDepth(101).setScrollFactor(0);
+    }).setDepth(901).setScrollFactor(0);
 
-    this.livesLabel = scene.add.text(980, 16, 'LIVES', style).setDepth(101).setScrollFactor(0);
+    this.livesLabel = scene.add.text(980, 16, 'LIVES', style).setDepth(901).setScrollFactor(0);
     this.hearts = [];
     for (let i = 0; i < STARTING_LIVES; i += 1) {
       this.hearts.push(
         scene.add.image(1060 + i * 34, 26, ASSET_KEYS.HEART)
-          .setDepth(101)
+          .setDepth(901)
           .setScale(1.25)
           .setScrollFactor(0),
       );
@@ -48,7 +48,7 @@ export class Hud {
 
     // Bottom-right minimap (reference)
     this.radar = scene.add.image(w - 78, h - 78, ASSET_KEYS.RADAR)
-      .setDepth(100)
+      .setDepth(900)
       .setDisplaySize(120, 120)
       .setAlpha(0.92)
       .setScrollFactor(0);
@@ -58,7 +58,7 @@ export class Hud {
       h - 78,
       0, 9, 11, 0, 22, 9,
       COLORS.GREEN,
-    ).setDepth(101).setScrollFactor(0);
+    ).setDepth(901).setScrollFactor(0);
 
     this.radarBlips = [];
   }
@@ -99,7 +99,7 @@ export class Hud {
         6,
         6,
         0xffffff,
-      ).setDepth(101).setScrollFactor(0);
+      ).setDepth(901).setScrollFactor(0);
       this.radarBlips.push(blip);
     });
   }

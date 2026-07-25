@@ -4,29 +4,32 @@ import { TrafficCar } from '../objects/TrafficCar.js';
 import { RiderPickup } from '../objects/RiderPickup.js';
 
 /**
- * Progressive traffic + rider spawn curves.
+ * Fairer spawn curves: fewer stacked lane traps, more riders early.
  */
 export class SpawnSystem {
   /**
    * @param {Phaser.Scene} scene
-   * @param {{ trafficGroup: Phaser.Physics.Arcade.Group, riderGroup: Phaser.Physics.Arcade.Group }} groups
+   * @param {{ trafficGroup: Phaser.Physics.Arcade.Group, riderGroup: Phaser.Physics.Arcade.Group, getPlayerLane?: Function }} groups
    */
   constructor(scene, groups) {
     this.scene = scene;
     this.trafficGroup = groups.trafficGroup;
     this.riderGroup = groups.riderGroup;
+    this.getPlayerLane = groups.getPlayerLane || (() => 1);
     this.enabled = false;
     this.trafficTimer = 0;
     this.riderTimer = 0;
     this.elapsed = 0;
     this.lastTrafficLane = 1;
+    this.recentTrafficLanes = [];
   }
 
   start() {
     this.enabled = true;
     this.elapsed = 0;
-    this.trafficTimer = 400;
-    this.riderTimer = 1200;
+    this.trafficTimer = 900;
+    this.riderTimer = 700;
+    this.recentTrafficLanes = [];
   }
 
   stop() {
@@ -47,11 +50,11 @@ export class SpawnSystem {
     const t = this.elapsed / 1000;
     const trafficEvery = Math.max(
       SPAWN.TRAFFIC_MIN_MS,
-      SPAWN.TRAFFIC_START_MS - t * 35,
+      SPAWN.TRAFFIC_START_MS - t * 18,
     );
     const riderEvery = Math.max(
       SPAWN.RIDER_MIN_MS,
-      SPAWN.RIDER_START_MS - t * 20,
+      SPAWN.RIDER_START_MS - t * 14,
     );
 
     if (this.trafficTimer <= 0) {
@@ -65,18 +68,46 @@ export class SpawnSystem {
     }
   }
 
+  pickTrafficLane() {
+    const playerLane = this.getPlayerLane();
+    const options = [0, 1, 2].filter((lane) => {
+      // Avoid repeating the same lane three times in a row.
+      const recentSame = this.recentTrafficLanes.filter((l) => l === lane).length;
+      if (recentSame >= 2) return false;
+      return true;
+    });
+
+    // 55% chance to avoid the player's current lane — keeps the game readable.
+    let pool = options;
+    if (Math.random() < 0.55) {
+      const safe = options.filter((l) => l !== playerLane);
+      if (safe.length) pool = safe;
+    }
+
+    let lane = Phaser.Utils.Array.GetRandom(pool.length ? pool : [0, 1, 2]);
+    if (lane === this.lastTrafficLane && pool.length > 1) {
+      lane = Phaser.Utils.Array.GetRandom(pool.filter((l) => l !== lane));
+    }
+    return lane;
+  }
+
   /** @param {number} scrollSpeed */
   spawnTraffic(scrollSpeed) {
-    let lane = Phaser.Math.Between(0, LANE_COUNT - 1);
-    if (lane === this.lastTrafficLane) {
-      lane = (lane + 1) % LANE_COUNT;
-    }
+    const lane = this.pickTrafficLane();
     this.lastTrafficLane = lane;
+    this.recentTrafficLanes.push(lane);
+    if (this.recentTrafficLanes.length > 4) this.recentTrafficLanes.shift();
 
-    const key = Phaser.Utils.Array.GetRandom(ASSET_KEYS.TRAFFIC);
-    const car = new TrafficCar(this.scene, this.scene.scale.width + 80, lane, key);
+    // Prefer smaller cars early; buses/trucks later.
+    const early = this.elapsed < 20000;
+    const keys = early
+      ? ASSET_KEYS.TRAFFIC.filter((k) => !k.includes('bus') && !k.includes('truck'))
+      : ASSET_KEYS.TRAFFIC;
+    const key = Phaser.Utils.Array.GetRandom(keys);
+
+    const car = new TrafficCar(this.scene, this.scene.scale.width + 90, lane, key);
     const speed = Phaser.Math.Clamp(
-      scrollSpeed + Phaser.Math.Between(40, 140),
+      scrollSpeed + Phaser.Math.Between(30, 100),
       SPEED.TRAFFIC_MIN,
       SPEED.TRAFFIC_MAX,
     );
@@ -86,12 +117,17 @@ export class SpawnSystem {
 
   /** @param {number} scrollSpeed */
   spawnRider(scrollSpeed) {
-    // Prefer a lane that is not the last traffic lane for fairness.
-    let lane = Phaser.Math.Between(0, LANE_COUNT - 1);
-    if (lane === this.lastTrafficLane) {
-      lane = (lane + 2) % LANE_COUNT;
+    const playerLane = this.getPlayerLane();
+    // Often put a rider in/near the player lane so pickups feel rewarding.
+    let lane = playerLane;
+    if (Math.random() < 0.45) {
+      lane = Phaser.Math.Clamp(playerLane + Phaser.Math.Between(-1, 1), 0, LANE_COUNT - 1);
     }
-    const pickup = new RiderPickup(this.scene, this.scene.scale.width + 60, lane);
+    if (lane === this.lastTrafficLane && Math.random() < 0.5) {
+      lane = (lane + 1) % LANE_COUNT;
+    }
+
+    const pickup = new RiderPickup(this.scene, this.scene.scale.width + 70, lane);
     pickup.scroll(scrollSpeed);
     this.riderGroup.add(pickup);
   }
