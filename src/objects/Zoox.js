@@ -77,13 +77,11 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
     this.shadow.setPosition(this.x + 2, this.baseY + 18);
     this.headlight.setPosition(this.x + 70, this.y - 8);
     this.taillight.setPosition(this.x - 60, this.y - 8);
-    // Visual-only underglow shimmer — does not affect physics/collision.
+    // Visual-only underglow shimmer — kept soft/dim so body stays matte blue.
     this.underglow.clear();
-    const pulse = 0.22 + Math.sin(this.scene.time.now / 180) * 0.08;
-    this.underglow.fillStyle(0x3acbff, pulse * 0.55);
-    this.underglow.fillEllipse(this.x, this.baseY + 18, 118, 20);
+    const pulse = 0.06 + Math.sin(this.scene.time.now / 240) * 0.02;
     this.underglow.fillStyle(0x00e5ff, pulse);
-    this.underglow.fillEllipse(this.x, this.baseY + 16, 96, 13);
+    this.underglow.fillEllipse(this.x, this.baseY + 17, 84, 10);
   }
 
   /**
