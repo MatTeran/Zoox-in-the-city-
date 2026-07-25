@@ -1,17 +1,16 @@
 import Phaser from 'phaser';
 import {
+  ASSET_KEYS,
   COLORS,
-  GAME_TITLE,
-  KEYS,
   MENU_BLURB,
   TAGLINE,
   VEHICLE_CATEGORY,
   VEHICLE_NAME,
 } from '../config.js';
+import { ScoreSystem } from '../systems/ScoreSystem.js';
 
 /**
- * Premium title screen stub.
- * Stage 0 establishes layout regions; Stage 4 will polish visuals/assets.
+ * Arcade-cabinet title screen with animated SF skyline and idling Zoox.
  */
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -21,112 +20,125 @@ export class MenuScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    this.cameras.main.setBackgroundColor(COLORS.DEEP_NAVY);
-    this.drawBackdrop(width, height);
+    this.add.image(width / 2, height / 2, ASSET_KEYS.MENU_BG).setDisplaySize(width, height);
 
-    // LEFT: vehicle select card (always Zoox / ROBOTAXI)
-    this.add
-      .text(width * 0.24, height * 0.16, VEHICLE_CATEGORY, {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '18px',
-        color: '#7a3cff',
-        letterSpacing: 4,
-      })
-      .setOrigin(0.5);
+    // Parallax drift layers for life on the title.
+    this.clouds = this.add.tileSprite(0, 40, width, 140, ASSET_KEYS.CLOUDS)
+      .setOrigin(0, 0)
+      .setAlpha(0.8);
+    this.skyline = this.add.tileSprite(0, 150, width, 200, ASSET_KEYS.SKYLINE)
+      .setOrigin(0, 0)
+      .setAlpha(0.95);
+    this.mid = this.add.tileSprite(0, 260, width, 200, ASSET_KEYS.MIDGROUND)
+      .setOrigin(0, 0);
 
-    this.add
-      .image(width * 0.24, height * 0.42, 'fallback-zoox')
-      .setScale(2.1)
-      .setOrigin(0.5);
+    // Dim left/right panels for cabinet readability
+    const veil = this.add.graphics();
+    veil.fillStyle(COLORS.DEEP_NAVY, 0.45);
+    veil.fillRect(0, 0, width * 0.42, height);
+    veil.fillStyle(COLORS.DEEP_NAVY, 0.35);
+    veil.fillRect(width * 0.55, 0, width * 0.45, height);
 
-    this.add
-      .text(width * 0.24, height * 0.62, VEHICLE_NAME, {
-        fontFamily: 'Arial Black, Arial, sans-serif',
-        fontSize: '48px',
-        color: '#00f0ff',
-      })
-      .setOrigin(0.5);
+    // LEFT — always-selected robotaxi
+    this.add.text(width * 0.22, height * 0.14, VEHICLE_CATEGORY, {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '20px',
+      color: '#7a3cff',
+    }).setOrigin(0.5);
 
-    this.add
-      .text(width * 0.24, height * 0.71, TAGLINE, {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '16px',
-        color: '#ffd84d',
-      })
-      .setOrigin(0.5);
+    this.zoox = this.add.sprite(width * 0.22, height * 0.42, ASSET_KEYS.ZOOX)
+      .setScale(0.95);
+    if (this.anims.exists('zoox-drive')) this.zoox.play('zoox-drive');
 
-    this.add
-      .text(width * 0.24, height * 0.79, 'SELECTED', {
-        fontFamily: 'Arial Black, Arial, sans-serif',
-        fontSize: '20px',
-        color: '#ff2bd6',
-      })
-      .setOrigin(0.5);
+    this.tweens.add({
+      targets: this.zoox,
+      y: this.zoox.y - 6,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
 
-    // RIGHT: title + start CTA
-    const [titleA, titleB] = GAME_TITLE.split(' FUTURE ');
-    this.add
-      .text(width * 0.68, height * 0.28, titleA, {
-        fontFamily: 'Arial Black, Arial, sans-serif',
-        fontSize: '64px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
+    this.add.text(width * 0.22, height * 0.62, VEHICLE_NAME, {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '54px',
+      color: '#00f0ff',
+    }).setOrigin(0.5);
 
-    this.add
-      .text(width * 0.68, height * 0.38, `FUTURE ${titleB}`, {
-        fontFamily: 'Arial Black, Arial, sans-serif',
-        fontSize: '54px',
-        color: '#00f0ff',
-      })
-      .setOrigin(0.5);
+    this.add.text(width * 0.22, height * 0.71, TAGLINE, {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '16px',
+      color: '#ffd84d',
+    }).setOrigin(0.5);
 
-    this.add
-      .text(width * 0.68, height * 0.52, MENU_BLURB, {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '18px',
-        color: '#d7e7ff',
-        align: 'center',
-        wordWrap: { width: width * 0.42 },
-      })
-      .setOrigin(0.5);
+    this.add.text(width * 0.22, height * 0.79, 'SELECTED', {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '22px',
+      color: '#ff2bd6',
+    }).setOrigin(0.5);
 
-    const startBtn = this.add
-      .text(width * 0.68, height * 0.68, 'START GAME', {
-        fontFamily: 'Arial Black, Arial, sans-serif',
-        fontSize: '28px',
-        color: '#050816',
-        backgroundColor: '#00f0ff',
-        padding: { x: 28, y: 16 },
-      })
-      .setOrigin(0.5)
+    // RIGHT — title + start
+    const [titleA, titleB] = ['ZOOX', 'FUTURE SF'];
+    this.add.text(width * 0.72, height * 0.22, titleA, {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '72px',
+      color: '#ffffff',
+    }).setOrigin(0.5);
+
+    this.add.text(width * 0.72, height * 0.34, titleB, {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '56px',
+      color: '#00f0ff',
+    }).setOrigin(0.5);
+
+    this.add.text(width * 0.72, height * 0.48, MENU_BLURB, {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '18px',
+      color: '#d7e7ff',
+      align: 'center',
+      wordWrap: { width: width * 0.38 },
+    }).setOrigin(0.5);
+
+    this.add.text(width * 0.72, height * 0.58, `HIGH ${ScoreSystem.readHighScore()}`, {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '18px',
+      color: '#ffd84d',
+    }).setOrigin(0.5);
+
+    const start = this.add.image(width * 0.72, height * 0.72, ASSET_KEYS.BUTTON)
+      .setDisplaySize(260, 72)
       .setInteractive({ useHandCursor: true });
 
-    startBtn.on('pointerover', () => startBtn.setStyle({ backgroundColor: '#ff2bd6' }));
-    startBtn.on('pointerout', () => startBtn.setStyle({ backgroundColor: '#00f0ff' }));
-    startBtn.on('pointerup', () => this.startGame());
+    const startLabel = this.add.text(width * 0.72, height * 0.72, 'START GAME', {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '28px',
+      color: '#050816',
+    }).setOrigin(0.5);
 
-    this.add
-      .text(width * 0.68, height * 0.8, 'Press SPACE · Swipe or tap Start', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '14px',
-        color: '#9bb4d8',
-      })
-      .setOrigin(0.5);
+    this.tweens.add({
+      targets: [start, startLabel],
+      scaleX: 1.04,
+      scaleY: 1.04,
+      duration: 650,
+      yoyo: true,
+      repeat: -1,
+    });
 
-    this.input.keyboard?.on(`keydown-${KEYS.START[0]}`, () => this.startGame());
+    start.on('pointerup', () => this.startGame());
+    this.input.keyboard?.on('keydown-SPACE', () => this.startGame());
+
+    this.add.text(width * 0.72, height * 0.84, 'SPACE / TAP  ·  W S LANES  ·  P PAUSE', {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '14px',
+      color: '#9bb4d8',
+    }).setOrigin(0.5);
   }
 
-  drawBackdrop(width, height) {
-    const g = this.add.graphics();
-    g.fillGradientStyle(0x0a1230, 0x0a1230, 0x1a0b36, 0x071828, 1);
-    g.fillRect(0, 0, width, height);
-
-    // Soft neon orbs — atmosphere only for Stage 0.
-    g.fillStyle(COLORS.PURPLE, 0.18);
-    g.fillCircle(width * 0.2, height * 0.2, 160);
-    g.fillStyle(COLORS.ELECTRIC_CYAN, 0.12);
-    g.fillCircle(width * 0.78, height * 0.7, 180);
+  update(_t, delta) {
+    const d = delta / 16;
+    this.clouds.tilePositionX += 0.15 * d;
+    this.skyline.tilePositionX += 0.35 * d;
+    this.mid.tilePositionX += 0.7 * d;
   }
 
   startGame() {

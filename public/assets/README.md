@@ -1,34 +1,39 @@
-# Game Assets
+# ZOOX FUTURE SF — Pixel Asset Pack
 
-Drop production art into these folders. Gameplay code loads by **stable asset keys**, so files can be replaced without changing scene/object logic.
+All gameplay objects are **separate sprites**. Backgrounds never bake in the player, traffic, riders, or controls.
 
-## Expected keys (Stage 1+)
+## Folders
 
-### backgrounds/
-- `sky.webp`
-- `skyline.webp`
-- `landmarks.webp`
-- `foreground.webp`
-- `road.webp`
-- `road_reflections.webp`
+| Folder | Contents |
+|---|---|
+| `backgrounds/` | Night sky, clouds |
+| `skyline/` | Distant SF landmarks + neon midground districts |
+| `roads/` | 3-lane wet road + reflection overlay |
+| `zoox/` | Player robotaxi frames |
+| `traffic/` | Sedan, SUV, van, taxi, EV, bus, truck |
+| `riders/` | Rider variants + neon kiosk |
+| `effects/` | Rain, sparks, burst, headlight cone, fragments |
+| `ui/` | HUD panels, hearts, buttons, radar, menu backdrop |
+| `audio/` | Reserved for SFX / music |
 
-### vehicles/
-- `zoox.webp` — transparent Zoox robotaxi only
+## Landmark coverage (skyline art)
 
-### traffic/
-- Separate transparent cars, e.g. `traffic_sedan.webp`, `traffic_van.webp`
+- Salesforce Tower
+- Transamerica Pyramid
+- Ferry Building
+- Bay Bridge
+- Pier 39
+- Painted Ladies
+- Chinatown lanterns / Dragon district
+- Market Street strip
+- Cable car
+- Lombard zigzag cue
+- Fisherman’s Wharf signage
 
-### riders/
-- `rider.webp`
-- `kiosk.webp`
+## Regenerating
 
-### ui/
-- Buttons, panels, menu chrome
+```bash
+python3 scripts/art/generate_pixel_assets.py
+```
 
-### effects/
-- Pickup burst / collision sparks
-
-### audio/
-- Optional SFX / music
-
-Until production art arrives, BootScene generates temporary fallback textures.
+Replace any PNG in-place — BootScene keys stay stable.

@@ -1,6 +1,5 @@
 /**
- * Shared game constants for ZOOX FUTURE SF.
- * Scene/object modules should import from here instead of hardcoding values.
+ * Shared constants for ZOOX FUTURE SF — pixel neon arcade cabinet.
  */
 
 export const GAME_TITLE = 'ZOOX FUTURE SF';
@@ -9,29 +8,41 @@ export const VEHICLE_NAME = 'ZOOX';
 export const TAGLINE = 'The Future is for Riders';
 export const MENU_BLURB = 'Pick up riders. Dodge traffic. Own the neon city.';
 
-/** Logical gameplay resolution (16:9). */
+/** Logical gameplay resolution (16:9 arcade viewport). */
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 
 export const LANE_COUNT = 3;
-/** Y centers for the three traffic lanes in world space. */
-export const LANE_Y = [430, 520, 610];
+/** Y centers for the three traffic lanes on the road band. */
+export const LANE_Y = [485, 555, 625];
 
-export const PLAYER_X = 220;
+export const PLAYER_X = 260;
 export const STARTING_LIVES = 3;
 
 export const SCORE = {
-  PASSIVE_PER_SECOND: 10,
+  PASSIVE_PER_SECOND: 12,
   RIDER_BONUS: 300,
+  NEAR_MISS_BONUS: 50,
   STREAK_MULTIPLIER_STEP: 0.25,
   HIGH_SCORE_KEY: 'zoox_future_sf_high_score',
 };
 
 export const SPEED = {
-  BASE_SCROLL: 220,
-  MAX_SCROLL: 520,
-  RAMP_PER_SECOND: 4,
+  BASE_SCROLL: 240,
+  MAX_SCROLL: 560,
+  RAMP_PER_SECOND: 5,
+  TRAFFIC_MIN: 280,
+  TRAFFIC_MAX: 620,
 };
+
+export const SPAWN = {
+  TRAFFIC_START_MS: 1100,
+  TRAFFIC_MIN_MS: 520,
+  RIDER_START_MS: 2600,
+  RIDER_MIN_MS: 1500,
+};
+
+export const INVINCIBLE_MS = 1400;
 
 export const COLORS = {
   ELECTRIC_CYAN: 0x00f0ff,
@@ -42,6 +53,7 @@ export const COLORS = {
   WARM_YELLOW: 0xffd84d,
   ORANGE_LANDMARK: 0xff8a1f,
   WHITE: 0xffffff,
+  GREEN: 0x40ffa0,
 };
 
 export const KEYS = {
@@ -51,8 +63,31 @@ export const KEYS = {
   PAUSE: ['P'],
 };
 
+export const ASSET_KEYS = {
+  SKY: 'sky',
+  CLOUDS: 'clouds',
+  SKYLINE: 'skyline',
+  MIDGROUND: 'midground',
+  ROAD: 'road',
+  ROAD_REFLECT: 'road_reflect',
+  ZOOX: 'zoox',
+  ZOOX_1: 'zoox_1',
+  HEADLIGHT: 'headlight_cone',
+  KIOSK: 'kiosk',
+  PICKUP_SPARK: 'pickup_spark',
+  NEON_BURST: 'neon_burst',
+  RAIN: 'raindrop',
+  FRAGMENT: 'collision_fragment',
+  HUD_PANEL: 'hud_panel',
+  HEART: 'heart',
+  BUTTON: 'button',
+  RADAR: 'radar',
+  MENU_BG: 'menu_bg',
+  TRAFFIC: ['traffic_sedan', 'traffic_suv', 'traffic_van', 'traffic_taxi', 'traffic_ev', 'traffic_bus', 'traffic_truck'],
+  RIDERS: ['rider_a', 'rider_b', 'rider_c', 'rider_d', 'rider_e'],
+};
+
 /**
- * Phaser game configuration factory.
  * @param {typeof Phaser.Scene[]} scenes
  */
 export function createGameConfig(scenes) {
@@ -77,13 +112,10 @@ export function createGameConfig(scenes) {
       activePointers: 3,
     },
     scene: scenes,
-    audio: {
-      disableWebAudio: false,
-    },
     render: {
-      antialias: true,
-      pixelArt: false,
-      roundPixels: false,
+      antialias: false,
+      pixelArt: true,
+      roundPixels: true,
     },
   };
 }

@@ -1,3 +1,5 @@
+import { ASSET_KEYS } from '../config.js';
+
 /**
  * Thumb-friendly UP / DOWN / PAUSE controls for landscape phones.
  */
@@ -5,44 +7,34 @@ export class MobileControls {
   /** @param {Phaser.Scene} scene */
   constructor(scene) {
     this.scene = scene;
-
     const { width, height } = scene.scale;
-    const btnStyle = {
-      fontFamily: 'Arial Black, Arial, sans-serif',
-      fontSize: '22px',
-      color: '#050816',
-      backgroundColor: '#00f0ff',
-      padding: { x: 22, y: 16 },
+
+    const makeBtn = (x, y, label, color, event) => {
+      const img = scene.add.image(x, y, ASSET_KEYS.BUTTON)
+        .setDisplaySize(110, 56)
+        .setScrollFactor(0)
+        .setDepth(110)
+        .setInteractive({ useHandCursor: true });
+
+      const text = scene.add.text(x, y, label, {
+        fontFamily: '"Courier New", monospace',
+        fontSize: '20px',
+        color: color || '#050816',
+      }).setOrigin(0.5).setDepth(111).setScrollFactor(0);
+
+      img.on('pointerdown', () => img.setAlpha(0.7));
+      img.on('pointerup', () => {
+        img.setAlpha(1);
+        scene.events.emit(event);
+      });
+      img.on('pointerout', () => img.setAlpha(1));
+
+      return { img, text };
     };
 
-    this.upBtn = scene.add
-      .text(width - 110, height - 170, 'UP', btnStyle)
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(110)
-      .setInteractive({ useHandCursor: true });
-
-    this.downBtn = scene.add
-      .text(width - 110, height - 70, 'DOWN', btnStyle)
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(110)
-      .setInteractive({ useHandCursor: true });
-
-    this.pauseBtn = scene.add
-      .text(width - 110, 40, 'PAUSE', {
-        ...btnStyle,
-        backgroundColor: '#ff2bd6',
-        fontSize: '16px',
-        padding: { x: 16, y: 10 },
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(110)
-      .setInteractive({ useHandCursor: true });
-
-    this.upBtn.on('pointerup', () => scene.events.emit('mobile-lane-up'));
-    this.downBtn.on('pointerup', () => scene.events.emit('mobile-lane-down'));
-    this.pauseBtn.on('pointerup', () => scene.events.emit('mobile-pause'));
+    this.up = makeBtn(width - 96, height - 150, 'UP', '#050816', 'mobile-lane-up');
+    this.down = makeBtn(width - 96, height - 70, 'DOWN', '#050816', 'mobile-lane-down');
+    this.pause = makeBtn(width - 96, 86, 'PAUSE', '#050816', 'mobile-pause');
+    this.pause.img.setTint(0xff2bd6);
   }
 }

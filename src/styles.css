@@ -26,11 +26,12 @@ body {
   overflow: hidden;
   background: var(--bg-navy);
   color: #ffffff;
-  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+  font-family: "Courier New", "Lucida Console", monospace;
   touch-action: none;
   overscroll-behavior: none;
   -webkit-user-select: none;
   user-select: none;
+  image-rendering: pixelated;
 }
 
 #game-root {
@@ -58,12 +59,15 @@ body {
   position: relative;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px rgba(0, 240, 255, 0.25),
-    0 0 40px rgba(122, 60, 255, 0.25);
+    0 0 0 2px rgba(0, 240, 255, 0.35),
+    0 0 0 6px rgba(5, 8, 22, 1),
+    0 0 40px rgba(255, 43, 214, 0.2);
 }
 
 #game-container canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }

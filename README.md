@@ -1,87 +1,52 @@
 # ZOOX FUTURE SF
 
-Neon San Francisco robotaxi arcade game.
+Neon San Francisco robotaxi arcade game — 16-bit pixel cabinet energy for mobile.
 
-- **Game engine:** Phaser 3 + Vite (HTML5 Canvas)
-- **Mobile demo shell:** Expo (landscape WebView → Phaser game)
-- **Later packaging:** Capacitor-ready structure (not installed yet)
+- **Engine:** Phaser 3 + Vite (HTML5 Canvas, pixelArt mode)
+- **Demo shell:** Expo SDK 54 landscape WebView
+- **Tagline:** The Future is for Riders
 
-Tagline: **The Future is for Riders**
-
-## Quick start (desktop)
+## Quick start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the local Vite URL (default `http://localhost:5173`).
-
-## Demo on your phone with Expo Go
-
-1. Start the Phaser game (binds to LAN):
+## Expo Go demo
 
 ```bash
 npm run dev
-```
-
-2. Configure Expo to point at that server:
-
-```bash
 cp expo-app/.env.example expo-app/.env
-```
-
-Edit `expo-app/.env` and set your machine LAN IP:
-
-```bash
-EXPO_PUBLIC_GAME_URL=http://YOUR_LAN_IP:5173
-```
-
-3. Install Expo deps and launch:
-
-```bash
+# set EXPO_PUBLIC_GAME_URL to your reachable Vite URL
 npm --prefix expo-app install
-npm run expo
+cd expo-app && npx expo start --tunnel
 ```
 
-4. Scan the QR code with **Expo Go** (same Wi‑Fi as your computer). Keep the phone in **landscape**.
-
-### Optional helpers
+## Regenerate pixel art pack
 
 ```bash
-npm run build           # production web build
-npm run preview         # preview dist/
-npm run sync:expo-web   # copy dist/ into expo-app/assets/www (for future offline packaging)
+python3 scripts/art/generate_pixel_assets.py
 ```
 
-## Project structure
+## Controls
+
+- **W / ↑** lane up · **S / ↓** lane down
+- **Space** start / restart · **P** pause
+- Mobile: **UP / DOWN / PAUSE** + swipe
+
+## Gameplay
+
+- 3-lane endless runner through rainy neon SF
+- Pick up riders (+300, streak multiplier)
+- Near-miss bonus · traffic costs a life
+- Progressive speed · local high score
+
+## Structure
 
 ```text
-src/
-  main.js
-  config.js
-  scenes/          Boot, Menu, Game, GameOver
-  objects/         Zoox, TrafficCar, RiderPickup
-  systems/         Score, Spawn, Input
-  ui/              Hud, MobileControls
-  styles.css
-public/assets/     backgrounds, vehicles, traffic, riders, ui, effects, audio
-expo-app/          Expo WebView demo shell
+src/scenes|objects|systems|ui
+public/assets/{backgrounds,skyline,roads,zoox,traffic,riders,effects,ui,audio}
+expo-app/   Expo WebView demo
+scripts/art/generate_pixel_assets.py
 ```
-
-## Stage status
-
-- **Stage 0 (current):** scaffolding, stub scenes, HUD/input wiring, Expo demo shell
-- Stage 1: layered neon SF world + parallax
-- Stage 2: full Zoox vehicle + polished controls
-- Stage 3: traffic, riders, collisions, scoring
-- Stage 4: premium menu / game over
-- Stage 5: juice + mobile polish
-
-## Controls (Stage 0 sandbox)
-
-- **W / ↑** lane up
-- **S / ↓** lane down
-- **Space** start
-- **P** pause
-- Mobile: **UP / DOWN / PAUSE** buttons + swipe
