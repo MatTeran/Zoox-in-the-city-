@@ -22,36 +22,38 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setOrigin(0.5);
+    this.setOrigin(0.5, 0.72);
     this.setDepth(30);
-    this.setScale(0.78);
+    // Painted Zoox already includes underglow/reflection — keep scale readable.
+    this.setScale(0.92);
     this.setCollideWorldBounds(false);
-    this.body.setSize(this.width * 0.55, this.height * 0.32);
-    this.body.setOffset(this.width * 0.22, this.height * 0.42);
+    this.body.setSize(this.width * 0.58, this.height * 0.28);
+    this.body.setOffset(this.width * 0.2, this.height * 0.42);
 
     if (scene.anims.exists('zoox-drive')) {
       this.play('zoox-drive');
     }
 
+    // Soft contact shadow only — glow is baked into the painted sprite.
     this.shadow = scene.add.image(this.x, this.y + 28, ASSET_KEYS.SHADOW)
       .setDepth(27)
-      .setScale(1.4, 0.95)
-      .setAlpha(0.75);
+      .setScale(1.5, 0.85)
+      .setAlpha(0.45);
 
-    this.headlight = scene.add.image(this.x + 58, this.y + 2, ASSET_KEYS.HEADLIGHT)
+    this.headlight = scene.add.image(this.x + 70, this.y - 8, ASSET_KEYS.HEADLIGHT)
       .setOrigin(0, 0.5)
       .setDepth(29)
-      .setScale(0.9)
-      .setAlpha(0.9)
+      .setScale(0.7)
+      .setAlpha(0.45)
       .setBlendMode(Phaser.BlendModes.ADD);
 
-    this.taillight = scene.add.image(this.x - 48, this.y + 2, ASSET_KEYS.TAILLIGHT)
+    this.taillight = scene.add.image(this.x - 60, this.y - 8, ASSET_KEYS.TAILLIGHT)
       .setDepth(29)
-      .setScale(1.15)
-      .setAlpha(0.8)
+      .setScale(0.8)
+      .setAlpha(0.35)
       .setBlendMode(Phaser.BlendModes.ADD);
 
-    this.underglow = scene.add.graphics().setDepth(28);
+    this.underglow = scene.add.graphics().setDepth(28).setAlpha(0.35);
 
     // Bounce offset object — never tween sprite.y directly for idle.
     this.bounceState = { v: 0 };
@@ -72,15 +74,13 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
     if (!this.changingLane) {
       this.y = this.baseY + this.bounceState.v;
     }
-    this.shadow.setPosition(this.x + 2, this.baseY + this.displayHeight * 0.34);
-    this.headlight.setPosition(this.x + 58, this.y + 2);
-    this.taillight.setPosition(this.x - 52, this.y + 2);
+    this.shadow.setPosition(this.x + 2, this.baseY + 18);
+    this.headlight.setPosition(this.x + 70, this.y - 8);
+    this.taillight.setPosition(this.x - 60, this.y - 8);
     this.underglow.clear();
-    const pulse = 0.35 + Math.sin(this.scene.time.now / 180) * 0.1;
+    const pulse = 0.18 + Math.sin(this.scene.time.now / 180) * 0.06;
     this.underglow.fillStyle(0x00e5ff, pulse);
-    this.underglow.fillEllipse(this.x, this.y + this.displayHeight * 0.3, 90, 15);
-    this.underglow.fillStyle(0x40ffa0, pulse * 0.4);
-    this.underglow.fillEllipse(this.x + 22, this.y + this.displayHeight * 0.3, 44, 11);
+    this.underglow.fillEllipse(this.x, this.baseY + 16, 100, 14);
   }
 
   /**

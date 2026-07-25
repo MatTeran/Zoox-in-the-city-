@@ -71,6 +71,7 @@ export const ASSET_KEYS = {
   MIDGROUND: 'midground',
   ROAD: 'road',
   ROAD_REFLECT: 'road_reflect',
+  GAME_WORLD: 'game_world',
   ZOOX: 'zoox',
   ZOOX_1: 'zoox_1',
   HEADLIGHT: 'headlight_cone',
@@ -90,6 +91,15 @@ export const ASSET_KEYS = {
   TRAFFIC: ['traffic_sedan', 'traffic_suv', 'traffic_van', 'traffic_taxi', 'traffic_ev', 'traffic_bus', 'traffic_truck'],
   RIDERS: ['rider_a', 'rider_b', 'rider_c', 'rider_d', 'rider_e'],
 };
+
+/** Painted plates/sprites that should use linear filtering (not nearest). */
+export const PAINTED_ASSET_KEYS = [
+  ASSET_KEYS.MENU_BG,
+  ASSET_KEYS.GAME_WORLD,
+  ASSET_KEYS.ZOOX,
+  ASSET_KEYS.ZOOX_1,
+  ...ASSET_KEYS.TRAFFIC,
+];
 
 /**
  * @param {typeof Phaser.Scene[]} scenes

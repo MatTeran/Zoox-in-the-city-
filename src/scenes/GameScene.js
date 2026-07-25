@@ -92,55 +92,36 @@ export class GameScene extends Phaser.Scene {
   }
 
   createWorld() {
-    this.sky = this.add.image(0, 0, ASSET_KEYS.SKY)
-      .setOrigin(0)
-      .setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
+    // Painted neon SF plate — same art language as the start menu.
+    this.world = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, ASSET_KEYS.GAME_WORLD)
+      .setOrigin(0, 0)
       .setDepth(0);
 
-    this.clouds = this.add.tileSprite(0, 52, GAME_WIDTH, 120, ASSET_KEYS.CLOUDS)
-      .setOrigin(0, 0)
-      .setDepth(1)
-      .setAlpha(0.9);
+    // Keep legacy layers as null-safe stubs for update() scroll math.
+    this.clouds = this.world;
+    this.skyline = this.world;
+    this.midground = this.world;
+    this.road = this.world;
+    this.roadReflect = this.world;
 
-    this.skyline = this.add.tileSprite(0, 70, GAME_WIDTH, 280, ASSET_KEYS.SKYLINE)
-      .setOrigin(0, 0)
-      .setDepth(2);
-
-    const fog = this.add.graphics().setDepth(3);
-    fog.fillStyle(0x7a3cff, 0.12);
-    fog.fillRect(0, 220, GAME_WIDTH, 100);
-
-    this.midground = this.add.tileSprite(0, 200, GAME_WIDTH, 280, ASSET_KEYS.MIDGROUND)
-      .setOrigin(0, 0)
-      .setDepth(4);
-
-    this.road = this.add.tileSprite(0, 455, GAME_WIDTH, 265, ASSET_KEYS.ROAD)
-      .setOrigin(0, 0)
-      .setDepth(8);
-    this.roadReflect = this.add.tileSprite(0, 455, GAME_WIDTH, 265, ASSET_KEYS.ROAD_REFLECT)
-      .setOrigin(0, 0)
-      .setDepth(9)
-      .setAlpha(0.7)
-      .setBlendMode(Phaser.BlendModes.ADD);
-
-    // Strong lane readability guides
+    // Soft lane readability without covering the painted wet road.
     this.laneGuides = this.add.graphics().setDepth(9);
     this.drawLaneGuides();
 
-    this.neonWash = this.add.graphics().setDepth(7).setAlpha(0.24);
+    this.neonWash = this.add.graphics().setDepth(7).setAlpha(0.12);
     this.drawNeonWash(0);
 
-    this.speedLines = this.add.graphics().setDepth(10).setAlpha(0.28);
+    this.speedLines = this.add.graphics().setDepth(10).setAlpha(0.18);
 
     this.splashes = this.add.particles(0, 0, ASSET_KEYS.PICKUP_SPARK, {
       x: { min: 0, max: GAME_WIDTH },
-      y: { min: 500, max: 700 },
+      y: { min: 520, max: 700 },
       lifespan: 260,
-      speedY: { min: -16, max: -40 },
-      scale: { start: 0.2, end: 0 },
+      speedY: { min: -12, max: -30 },
+      scale: { start: 0.18, end: 0 },
       quantity: 1,
-      frequency: 120,
-      alpha: { start: 0.35, end: 0 },
+      frequency: 160,
+      alpha: { start: 0.28, end: 0 },
       tint: [0x88ddff, 0xffffff],
     });
     this.splashes.setDepth(11);
@@ -201,14 +182,9 @@ export class GameScene extends Phaser.Scene {
 
     const d = delta / 16;
     const roadScroll = (this.scrollSpeed / 60) * d;
-    this.clouds.tilePositionX += roadScroll * 0.12;
-    this.skyline.tilePositionX += roadScroll * 0.28;
-    this.midground.tilePositionX += roadScroll * 0.55;
-    this.road.tilePositionX += roadScroll;
-    this.roadReflect.tilePositionX += roadScroll * 1.05;
+    // Single painted strip scrolls as the whole world.
+    this.world.tilePositionX += roadScroll * 0.95;
 
-    this.midground.setAlpha(0.96 + Math.sin(this.time.now / 320) * 0.03);
-    this.roadReflect.setAlpha(0.5 + Math.sin(this.time.now / 220) * 0.12);
     this.drawNeonWash(this.time.now);
     this.drawSpeedLines();
     this.highlightPlayerLane();

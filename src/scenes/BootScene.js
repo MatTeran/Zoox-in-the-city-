@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ASSET_KEYS, COLORS, GAME_TITLE } from '../config.js';
+import { ASSET_KEYS, COLORS, GAME_TITLE, PAINTED_ASSET_KEYS } from '../config.js';
 
 /**
  * Preloads the pixel-art cabinet pack and applies nearest-neighbor filtering.
@@ -47,6 +47,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image(ASSET_KEYS.MIDGROUND, 'assets/skyline/midground.png');
     this.load.image(ASSET_KEYS.ROAD, 'assets/roads/road.png');
     this.load.image(ASSET_KEYS.ROAD_REFLECT, 'assets/roads/reflections.png');
+    this.load.image(ASSET_KEYS.GAME_WORLD, 'assets/backgrounds/game_world.png');
     this.load.image(ASSET_KEYS.MENU_BG, 'assets/ui/menu_bg.png');
 
     // Player
@@ -82,10 +83,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    // Crisp pixels for gameplay sprites; linear for the painted menu plate.
+    // Crisp pixels for UI icons; linear for painted world/vehicle art.
+    const painted = new Set(PAINTED_ASSET_KEYS);
     this.textures.getTextureKeys().forEach((key) => {
       if (key === '__DEFAULT' || key === '__MISSING') return;
-      const mode = key === ASSET_KEYS.MENU_BG
+      const mode = painted.has(key)
         ? Phaser.Textures.FilterMode.LINEAR
         : Phaser.Textures.FilterMode.NEAREST;
       this.textures.get(key).setFilter(mode);

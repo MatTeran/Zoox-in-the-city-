@@ -1,8 +1,14 @@
 import Phaser from 'phaser';
 import { ASSET_KEYS, LANE_Y } from '../config.js';
 
+function nameScale(key = '') {
+  if (key.includes('bus') || key.includes('truck')) return 1.35;
+  if (key.includes('suv') || key.includes('van')) return 1.25;
+  return 1.2;
+}
+
 /**
- * Oncoming pixel traffic with ground shadow + forgiving hitbox.
+ * Oncoming painted traffic with ground shadow + forgiving hitbox.
  */
 export class TrafficCar extends Phaser.Physics.Arcade.Sprite {
   /**
@@ -23,12 +29,12 @@ export class TrafficCar extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setOrigin(0.5);
+    this.setOrigin(0.5, 0.7);
     this.setDepth(18 + laneIndex);
-    this.setScale(0.64);
+    this.setScale(nameScale(key));
     // Smaller body = fairer dodges / near-misses.
-    this.body.setSize(this.width * 0.5, this.height * 0.28);
-    this.body.setOffset(this.width * 0.25, this.height * 0.48);
+    this.body.setSize(this.width * 0.52, this.height * 0.3);
+    this.body.setOffset(this.width * 0.24, this.height * 0.4);
 
     this.shadow = scene.add.image(x, LANE_Y[laneIndex] + 22, ASSET_KEYS.SHADOW)
       .setDepth(17 + laneIndex)
