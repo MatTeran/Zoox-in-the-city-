@@ -44,29 +44,31 @@ export class GameScene extends Phaser.Scene {
   }
 
   createWorld() {
-    // Layer stack tuned so city art (packed to top of textures) sits above the road.
+    // Layer stack: sky → clouds → landmarks → fog → neon street → wet road
     this.sky = this.add.image(0, 0, ASSET_KEYS.SKY)
       .setOrigin(0)
       .setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
       .setDepth(0);
 
-    this.clouds = this.add.tileSprite(0, 20, GAME_WIDTH, 140, ASSET_KEYS.CLOUDS)
+    this.clouds = this.add.tileSprite(0, 10, GAME_WIDTH, 130, ASSET_KEYS.CLOUDS)
       .setOrigin(0, 0)
       .setDepth(1)
-      .setAlpha(0.85);
+      .setAlpha(0.88);
 
-    this.skyline = this.add.tileSprite(0, 150, GAME_WIDTH, 220, ASSET_KEYS.SKYLINE)
+    this.skyline = this.add.tileSprite(0, 130, GAME_WIDTH, 240, ASSET_KEYS.SKYLINE)
       .setOrigin(0, 0)
       .setDepth(2);
 
-    this.midground = this.add.tileSprite(0, 250, GAME_WIDTH, 220, ASSET_KEYS.MIDGROUND)
+    // Atmosphere between distant landmarks and street
+    const fog = this.add.graphics().setDepth(3);
+    fog.fillStyle(0x6b5cff, 0.16);
+    fog.fillRect(0, 260, GAME_WIDTH, 90);
+    fog.fillStyle(0x00f0ff, 0.05);
+    fog.fillRect(0, 320, GAME_WIDTH, 40);
+
+    this.midground = this.add.tileSprite(0, 235, GAME_WIDTH, 230, ASSET_KEYS.MIDGROUND)
       .setOrigin(0, 0)
       .setDepth(4);
-
-    // Soft fog between skyline and street
-    const fog = this.add.graphics().setDepth(3);
-    fog.fillStyle(0x6b5cff, 0.14);
-    fog.fillRect(0, 280, GAME_WIDTH, 70);
 
     this.road = this.add.tileSprite(0, 430, GAME_WIDTH, 290, ASSET_KEYS.ROAD)
       .setOrigin(0, 0)
@@ -74,9 +76,39 @@ export class GameScene extends Phaser.Scene {
     this.roadReflect = this.add.tileSprite(0, 430, GAME_WIDTH, 290, ASSET_KEYS.ROAD_REFLECT)
       .setOrigin(0, 0)
       .setDepth(9)
-      .setAlpha(0.7);
+      .setAlpha(0.75);
 
-    this.speedLines = this.add.graphics().setDepth(10).setAlpha(0.35);
+    // Pulsing neon wash over the street band (cabinet bloom feel, not photo blur)
+    this.neonWash = this.add.graphics().setDepth(7).setAlpha(0.22);
+    this.drawNeonWash(0);
+
+    this.speedLines = this.add.graphics().setDepth(10).setAlpha(0.4);
+
+    // Occasional rain splash sparks on asphalt
+    this.splashes = this.add.particles(0, 0, ASSET_KEYS.PICKUP_SPARK, {
+      x: { min: 0, max: GAME_WIDTH },
+      y: { min: 470, max: 690 },
+      lifespan: 280,
+      speedY: { min: -20, max: -60 },
+      scale: { start: 0.25, end: 0 },
+      quantity: 1,
+      frequency: 90,
+      alpha: { start: 0.45, end: 0 },
+      tint: [0x88ddff, 0xffffff],
+    });
+    this.splashes.setDepth(11);
+  }
+
+  /** @param {number} t */
+  drawNeonWash(t) {
+    this.neonWash.clear();
+    const pulse = 0.5 + Math.sin(t / 400) * 0.5;
+    this.neonWash.fillStyle(COLORS.ELECTRIC_CYAN, 0.08 + pulse * 0.05);
+    this.neonWash.fillRect(0, 400, GAME_WIDTH, 40);
+    this.neonWash.fillStyle(COLORS.NEON_MAGENTA, 0.06 + (1 - pulse) * 0.05);
+    this.neonWash.fillRect(0, 680, GAME_WIDTH, 30);
+    this.neonWash.fillStyle(COLORS.PURPLE, 0.07);
+    this.neonWash.fillEllipse(GAME_WIDTH * 0.7, 360, 280, 60);
   }
 
   createSystems() {
@@ -136,6 +168,10 @@ export class GameScene extends Phaser.Scene {
     this.road.tilePositionX += roadScroll;
     this.roadReflect.tilePositionX += roadScroll * 1.05;
 
+    // Neon sign “living city” pulse on midground + wash
+    this.midground.setAlpha(0.92 + Math.sin(this.time.now / 320) * 0.06);
+    this.roadReflect.setAlpha(0.55 + Math.sin(this.time.now / 220) * 0.15);
+    this.drawNeonWash(this.time.now);
     this.drawSpeedLines();
 
     this.scoreSystem.addPassive(delta);
@@ -274,10 +310,12 @@ export class GameScene extends Phaser.Scene {
     this.hud.setPaused(this.isPaused);
     if (this.isPaused) {
       this.physics.pause();
-      this.rain.pause();
+      this.rain?.pause();
+      this.splashes?.pause();
     } else {
       this.physics.resume();
-      this.rain.resume();
+      this.rain?.resume();
+      this.splashes?.resume();
     }
   }
 }

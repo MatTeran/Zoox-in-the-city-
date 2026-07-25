@@ -21,7 +21,7 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
 
     this.setOrigin(0.5);
     this.setDepth(30);
-    this.setScale(0.52);
+    this.setScale(0.62);
     this.setCollideWorldBounds(false);
     this.body.setSize(this.width * 0.72, this.height * 0.45);
     this.body.setOffset(this.width * 0.14, this.height * 0.35);

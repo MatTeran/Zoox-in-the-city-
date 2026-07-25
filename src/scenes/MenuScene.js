@@ -47,8 +47,19 @@ export class MenuScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.zoox = this.add.sprite(width * 0.22, height * 0.42, ASSET_KEYS.ZOOX)
-      .setScale(0.95);
+      .setScale(1.15);
     if (this.anims.exists('zoox-drive')) this.zoox.play('zoox-drive');
+
+    // Soft underglow under menu Zoox
+    this.menuGlow = this.add.graphics();
+    const drawGlow = () => {
+      this.menuGlow.clear();
+      this.menuGlow.fillStyle(0x00b4ff, 0.28);
+      this.menuGlow.fillEllipse(this.zoox.x, this.zoox.y + 48, 140, 22);
+      this.menuGlow.fillStyle(0xff2bd6, 0.12);
+      this.menuGlow.fillEllipse(this.zoox.x, this.zoox.y + 52, 100, 14);
+    };
+    drawGlow();
 
     this.tweens.add({
       targets: this.zoox,
@@ -57,6 +68,19 @@ export class MenuScene extends Phaser.Scene {
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
+      onUpdate: drawGlow,
+    });
+
+    // Floating neon motes
+    this.menuSpark = this.add.particles(width * 0.22, height * 0.42, ASSET_KEYS.PICKUP_SPARK, {
+      x: { min: -80, max: 80 },
+      y: { min: -60, max: 60 },
+      lifespan: 1200,
+      speed: { min: 8, max: 24 },
+      scale: { start: 0.35, end: 0 },
+      frequency: 180,
+      alpha: { start: 0.7, end: 0 },
+      tint: [0x00f0ff, 0xff2bd6, 0xffd84d],
     });
 
     this.add.text(width * 0.22, height * 0.62, VEHICLE_NAME, {

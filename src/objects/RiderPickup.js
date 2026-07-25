@@ -21,7 +21,7 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
 
     this.setOrigin(0.5, 1);
     this.setDepth(16 + laneIndex);
-    this.setScale(0.55);
+    this.setScale(0.62);
     this.body.setAllowGravity(false);
     this.body.setImmovable(true);
     this.body.setSize(this.width * 0.7, this.height * 0.55);
@@ -34,7 +34,7 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
     this.rider = scene.add
       .image(x - 22, LANE_Y[laneIndex] - 4, riderKey)
       .setOrigin(0.5, 1)
-      .setScale(0.55)
+      .setScale(0.62)
       .setDepth(17 + laneIndex);
 
     this.holo = scene.add

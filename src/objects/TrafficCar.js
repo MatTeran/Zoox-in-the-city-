@@ -25,7 +25,7 @@ export class TrafficCar extends Phaser.Physics.Arcade.Sprite {
 
     this.setOrigin(0.5);
     this.setDepth(18 + laneIndex);
-    this.setScale(0.48);
+    this.setScale(0.58);
     this.setFlipX(false);
     this.body.setSize(this.width * 0.7, this.height * 0.45);
     this.body.setOffset(this.width * 0.15, this.height * 0.4);
