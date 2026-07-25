@@ -3,9 +3,8 @@ import { ASSET_KEYS } from '../config.js';
 import { ScoreSystem } from '../systems/ScoreSystem.js';
 
 /**
- * Start menu uses the painted reference plate as the full-bleed visual.
- * Only invisible hit zones sit over the baked-in buttons so the screen
- * looks like the mock, not a Phaser UI recreation.
+ * Painted menu plate is the full-bleed visual.
+ * Invisible hit targets are pixel-aligned to the baked button stack.
  */
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -15,8 +14,8 @@ export class MenuScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
     this.overlay = null;
+    this._busy = false;
 
-    // Full-bleed painted menu plate (title, buttons, Zoox, landmarks baked in).
     this.add.image(width / 2, height / 2, ASSET_KEYS.MENU_BG)
       .setDisplaySize(width, height)
       .setDepth(0);
@@ -28,16 +27,15 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /**
-   * Invisible interactive zones aligned to the painted button stack.
-   * Coordinates tuned to the menu_reference plate composition.
+   * Button centers measured from menu_bg.png neon borders (1280×720).
+   * Oversized targets for reliable phone taps.
    */
   createHitZones(width, height) {
+    // Measured mid-Y of each painted button on the plate.
+    const mids = [255, 318, 380, 447, 513].map((y) => (y / 720) * height);
+    const zoneW = Math.min(width * 0.42, 520);
+    const zoneH = Math.max(height * 0.085, 56);
     const cx = width * 0.5;
-    // Button stack sits in the middle band of the plate.
-    const startY = height * 0.365;
-    const gap = height * 0.078;
-    const zoneW = width * 0.30;
-    const zoneH = height * 0.065;
 
     const items = [
       { action: () => this.startGame() },
@@ -48,19 +46,32 @@ export class MenuScene extends Phaser.Scene {
     ];
 
     items.forEach((item, i) => {
-      const y = startY + i * gap;
-      const zone = this.add.zone(cx, y, zoneW, zoneH)
+      const y = mids[i];
+
+      // Near-invisible rect — more reliable than Zone for touch hit-testing.
+      const hit = this.add.rectangle(cx, y, zoneW, zoneH, 0xffffff, 0.001)
         .setDepth(10)
         .setInteractive({ useHandCursor: true });
 
-      // Subtle hover flash so players get feedback without hiding the art.
-      const flash = this.add.graphics().setDepth(9).setAlpha(0);
-      flash.fillStyle(0xffffff, 0.10);
-      flash.fillRoundedRect(cx - zoneW / 2, y - zoneH / 2, zoneW, zoneH, 10);
+      const flash = this.add.rectangle(cx, y, zoneW, zoneH, 0xffffff, 0.12)
+        .setDepth(9)
+        .setAlpha(0);
 
-      zone.on('pointerover', () => { flash.setAlpha(1); });
-      zone.on('pointerout', () => { flash.setAlpha(0); });
-      zone.on('pointerdown', () => item.action?.());
+      const fire = () => {
+        if (this._busy || this.overlay) return;
+        this._busy = true;
+        flash.setAlpha(1);
+        this.time.delayedCall(40, () => {
+          item.action?.();
+          this._busy = false;
+        });
+      };
+
+      hit.on('pointerover', () => flash.setAlpha(0.8));
+      hit.on('pointerout', () => flash.setAlpha(0));
+      hit.on('pointerdown', () => flash.setAlpha(1));
+      // pointerup is more reliable than pointerdown on iOS WebViews.
+      hit.on('pointerup', fire);
     });
   }
 

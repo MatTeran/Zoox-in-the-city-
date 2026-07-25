@@ -66,8 +66,7 @@ body {
 
 #game-container canvas {
   display: block;
-  width: 100% !important;
-  height: 100% !important;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  /* Let Phaser Scale Manager own canvas CSS size — forcing 100%
+     breaks touch/click coordinate mapping on mobile WebViews. */
+  image-rendering: auto;
 }

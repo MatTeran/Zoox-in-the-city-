@@ -93,10 +93,12 @@ export default function App() {
         javaScriptEnabled
         domStorageEnabled
         setSupportMultipleWindows={false}
+        scrollEnabled={false}
         bounces={false}
         overScrollMode="never"
         showsHorizontalScrollIndicator={false}
         showsVerticalScrollIndicator={false}
+        allowsLinkPreview={false}
         onError={(event) => {
           setError(event.nativeEvent?.description || 'WebView failed to load');
         }}
