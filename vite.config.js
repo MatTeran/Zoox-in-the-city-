@@ -10,6 +10,8 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
+    // Allow Cloudflare / localtunnel public demo URLs.
+    allowedHosts: true,
   },
   preview: {
     host: true,
