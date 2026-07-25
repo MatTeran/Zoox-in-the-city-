@@ -55,9 +55,10 @@ export class GameScene extends Phaser.Scene {
       .setDepth(1)
       .setAlpha(0.88);
 
-    this.skyline = this.add.tileSprite(0, 130, GAME_WIDTH, 240, ASSET_KEYS.SKYLINE)
+    this.skyline = this.add.tileSprite(0, 110, GAME_WIDTH, 260, ASSET_KEYS.SKYLINE)
       .setOrigin(0, 0)
-      .setDepth(2);
+      .setDepth(2)
+      .setTint(0xddeeff);
 
     // Atmosphere between distant landmarks and street
     const fog = this.add.graphics().setDepth(3);
