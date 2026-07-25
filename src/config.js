@@ -13,8 +13,8 @@ export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 
 export const LANE_COUNT = 3;
-/** Y centers for the three traffic lanes on the road band. */
-export const LANE_Y = [485, 555, 625];
+/** Y centers for the three traffic lanes (road sits in lower third, reference-style). */
+export const LANE_Y = [520, 580, 640];
 
 export const PLAYER_X = 260;
 export const STARTING_LIVES = 3;
@@ -73,11 +73,14 @@ export const ASSET_KEYS = {
   ZOOX: 'zoox',
   ZOOX_1: 'zoox_1',
   HEADLIGHT: 'headlight_cone',
+  TAILLIGHT: 'taillight_glow',
+  SHADOW: 'shadow',
   KIOSK: 'kiosk',
   PICKUP_SPARK: 'pickup_spark',
   NEON_BURST: 'neon_burst',
   RAIN: 'raindrop',
   FRAGMENT: 'collision_fragment',
+  HUD_BAR: 'hud_bar',
   HUD_PANEL: 'hud_panel',
   HEART: 'heart',
   BUTTON: 'button',

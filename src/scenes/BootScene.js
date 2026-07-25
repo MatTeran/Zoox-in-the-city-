@@ -53,6 +53,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image(ASSET_KEYS.ZOOX, 'assets/zoox/zoox_0.png');
     this.load.image(ASSET_KEYS.ZOOX_1, 'assets/zoox/zoox_1.png');
     this.load.image(ASSET_KEYS.HEADLIGHT, 'assets/effects/headlight_cone.png');
+    this.load.image(ASSET_KEYS.TAILLIGHT, 'assets/effects/taillight_glow.png');
+    this.load.image(ASSET_KEYS.SHADOW, 'assets/effects/shadow.png');
 
     // Traffic
     const trafficFiles = ['sedan', 'suv', 'van', 'taxi', 'ev', 'bus', 'truck'];
@@ -72,6 +74,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image(ASSET_KEYS.NEON_BURST, 'assets/effects/neon_burst.png');
     this.load.image(ASSET_KEYS.RAIN, 'assets/effects/raindrop.png');
     this.load.image(ASSET_KEYS.FRAGMENT, 'assets/effects/collision_fragment.png');
+    this.load.image(ASSET_KEYS.HUD_BAR, 'assets/ui/hud_bar.png');
     this.load.image(ASSET_KEYS.HUD_PANEL, 'assets/ui/hud_panel.png');
     this.load.image(ASSET_KEYS.HEART, 'assets/ui/heart.png');
     this.load.image(ASSET_KEYS.BUTTON, 'assets/ui/button.png');

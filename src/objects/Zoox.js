@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { ASSET_KEYS, INVINCIBLE_MS, LANE_Y, PLAYER_X } from '../config.js';
 
 /**
- * Pixel Zoox robotaxi — lane-locked, left-anchored, neon underglow + headlight cone.
+ * Pixel Zoox — reference lighting: soft headlight spill, red taillight bloom,
+ * ground shadow, cyan underglow, idle float + wheel frames.
  */
 export class Zoox extends Phaser.Physics.Arcade.Sprite {
   /**
@@ -21,7 +22,7 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
 
     this.setOrigin(0.5);
     this.setDepth(30);
-    this.setScale(0.62);
+    this.setScale(0.72);
     this.setCollideWorldBounds(false);
     this.body.setSize(this.width * 0.72, this.height * 0.45);
     this.body.setOffset(this.width * 0.14, this.height * 0.35);
@@ -30,12 +31,23 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
       this.play('zoox-drive');
     }
 
-    this.headlight = scene.add
-      .image(this.x + 70, this.y + 4, ASSET_KEYS.HEADLIGHT)
+    this.shadow = scene.add.image(this.x, this.y + 28, ASSET_KEYS.SHADOW)
+      .setDepth(27)
+      .setScale(1.35, 0.9)
+      .setAlpha(0.7);
+
+    this.headlight = scene.add.image(this.x + 58, this.y + 2, ASSET_KEYS.HEADLIGHT)
       .setOrigin(0, 0.5)
       .setDepth(29)
-      .setScale(0.7)
-      .setAlpha(0.8);
+      .setScale(0.85)
+      .setAlpha(0.85)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
+    this.taillight = scene.add.image(this.x - 48, this.y + 2, ASSET_KEYS.TAILLIGHT)
+      .setDepth(29)
+      .setScale(1.1)
+      .setAlpha(0.75)
+      .setBlendMode(Phaser.BlendModes.ADD);
 
     this.underglow = scene.add.graphics().setDepth(28);
     this.idleTween = scene.tweens.add({
@@ -53,15 +65,18 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
 
   syncFx() {
     if (!this.active) return;
-    this.headlight.setPosition(this.x + 52, this.y + 4);
+    this.shadow.setPosition(this.x + 2, this.y + this.displayHeight * 0.34);
+    this.headlight.setPosition(this.x + 56, this.y + 2);
+    this.taillight.setPosition(this.x - 50, this.y + 2);
     this.underglow.clear();
-    this.underglow.fillStyle(0x00b4ff, 0.35 + Math.sin(this.scene.time.now / 180) * 0.1);
-    this.underglow.fillEllipse(this.x, this.y + this.displayHeight * 0.28, 70, 12);
+    const pulse = 0.32 + Math.sin(this.scene.time.now / 180) * 0.1;
+    this.underglow.fillStyle(0x00e5ff, pulse);
+    this.underglow.fillEllipse(this.x, this.y + this.displayHeight * 0.3, 84, 14);
+    this.underglow.fillStyle(0x40ffa0, pulse * 0.35);
+    this.underglow.fillEllipse(this.x + 20, this.y + this.displayHeight * 0.3, 40, 10);
   }
 
-  /**
-   * @param {number} dir -1 up / +1 down
-   */
+  /** @param {number} dir */
   changeLane(dir) {
     if (this.changingLane) return;
     const next = Phaser.Math.Clamp(this.laneIndex + dir, 0, LANE_Y.length - 1);
@@ -69,7 +84,6 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
 
     this.changingLane = true;
     this.laneIndex = next;
-
     if (this.idleTween) this.idleTween.pause();
 
     this.scene.tweens.add({
@@ -110,7 +124,9 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
   }
 
   destroy(fromScene) {
+    this.shadow?.destroy();
     this.headlight?.destroy();
+    this.taillight?.destroy();
     this.underglow?.destroy();
     this.idleTween?.stop();
     super.destroy(fromScene);

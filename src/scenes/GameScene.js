@@ -44,51 +44,51 @@ export class GameScene extends Phaser.Scene {
   }
 
   createWorld() {
-    // Layer stack: sky → clouds → landmarks → fog → neon street → wet road
+    // Reference composition: sky/moon → landmarks → dense shops → road in lower third
     this.sky = this.add.image(0, 0, ASSET_KEYS.SKY)
       .setOrigin(0)
       .setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
       .setDepth(0);
 
-    this.clouds = this.add.tileSprite(0, 10, GAME_WIDTH, 130, ASSET_KEYS.CLOUDS)
+    this.clouds = this.add.tileSprite(0, 52, GAME_WIDTH, 120, ASSET_KEYS.CLOUDS)
       .setOrigin(0, 0)
       .setDepth(1)
-      .setAlpha(0.88);
+      .setAlpha(0.9);
 
-    this.skyline = this.add.tileSprite(0, 110, GAME_WIDTH, 260, ASSET_KEYS.SKYLINE)
+    this.skyline = this.add.tileSprite(0, 70, GAME_WIDTH, 280, ASSET_KEYS.SKYLINE)
       .setOrigin(0, 0)
-      .setDepth(2)
-      .setTint(0xddeeff);
+      .setDepth(2);
 
-    // Atmosphere between distant landmarks and street
     const fog = this.add.graphics().setDepth(3);
-    fog.fillStyle(0x6b5cff, 0.16);
-    fog.fillRect(0, 260, GAME_WIDTH, 90);
-    fog.fillStyle(0x00f0ff, 0.05);
-    fog.fillRect(0, 320, GAME_WIDTH, 40);
+    fog.fillStyle(0x7a3cff, 0.14);
+    fog.fillRect(0, 220, GAME_WIDTH, 100);
+    fog.fillStyle(0x00f0ff, 0.04);
+    fog.fillRect(0, 300, GAME_WIDTH, 50);
 
-    this.midground = this.add.tileSprite(0, 235, GAME_WIDTH, 230, ASSET_KEYS.MIDGROUND)
+    // Tall shop row filling the middle band (reference)
+    this.midground = this.add.tileSprite(0, 200, GAME_WIDTH, 280, ASSET_KEYS.MIDGROUND)
       .setOrigin(0, 0)
       .setDepth(4);
 
-    this.road = this.add.tileSprite(0, 430, GAME_WIDTH, 290, ASSET_KEYS.ROAD)
+    // Road / gameplay band — lower third
+    this.road = this.add.tileSprite(0, 455, GAME_WIDTH, 265, ASSET_KEYS.ROAD)
       .setOrigin(0, 0)
       .setDepth(8);
-    this.roadReflect = this.add.tileSprite(0, 430, GAME_WIDTH, 290, ASSET_KEYS.ROAD_REFLECT)
+    this.roadReflect = this.add.tileSprite(0, 455, GAME_WIDTH, 265, ASSET_KEYS.ROAD_REFLECT)
       .setOrigin(0, 0)
       .setDepth(9)
-      .setAlpha(0.75);
+      .setAlpha(0.8)
+      .setBlendMode(Phaser.BlendModes.ADD);
 
-    // Pulsing neon wash over the street band (cabinet bloom feel, not photo blur)
-    this.neonWash = this.add.graphics().setDepth(7).setAlpha(0.22);
+    // Soft bloom wash (humid neon night)
+    this.neonWash = this.add.graphics().setDepth(7).setAlpha(0.28);
     this.drawNeonWash(0);
 
-    this.speedLines = this.add.graphics().setDepth(10).setAlpha(0.4);
+    this.speedLines = this.add.graphics().setDepth(10).setAlpha(0.35);
 
-    // Occasional rain splash sparks on asphalt
     this.splashes = this.add.particles(0, 0, ASSET_KEYS.PICKUP_SPARK, {
       x: { min: 0, max: GAME_WIDTH },
-      y: { min: 470, max: 690 },
+      y: { min: 500, max: 700 },
       lifespan: 280,
       speedY: { min: -20, max: -60 },
       scale: { start: 0.25, end: 0 },
@@ -104,12 +104,16 @@ export class GameScene extends Phaser.Scene {
   drawNeonWash(t) {
     this.neonWash.clear();
     const pulse = 0.5 + Math.sin(t / 400) * 0.5;
-    this.neonWash.fillStyle(COLORS.ELECTRIC_CYAN, 0.08 + pulse * 0.05);
-    this.neonWash.fillRect(0, 400, GAME_WIDTH, 40);
-    this.neonWash.fillStyle(COLORS.NEON_MAGENTA, 0.06 + (1 - pulse) * 0.05);
-    this.neonWash.fillRect(0, 680, GAME_WIDTH, 30);
-    this.neonWash.fillStyle(COLORS.PURPLE, 0.07);
-    this.neonWash.fillEllipse(GAME_WIDTH * 0.7, 360, 280, 60);
+    this.neonWash.fillStyle(COLORS.WARM_YELLOW, 0.05 + pulse * 0.04);
+    this.neonWash.fillEllipse(180, 430, 160, 40);
+    this.neonWash.fillEllipse(520, 430, 140, 36);
+    this.neonWash.fillEllipse(900, 430, 160, 40);
+    this.neonWash.fillStyle(COLORS.ELECTRIC_CYAN, 0.06 + pulse * 0.04);
+    this.neonWash.fillRect(0, 448, GAME_WIDTH, 28);
+    this.neonWash.fillStyle(COLORS.NEON_MAGENTA, 0.05 + (1 - pulse) * 0.04);
+    this.neonWash.fillRect(0, 690, GAME_WIDTH, 24);
+    this.neonWash.fillStyle(COLORS.PURPLE, 0.08);
+    this.neonWash.fillEllipse(GAME_WIDTH * 0.65, 300, 320, 70);
   }
 
   createSystems() {

@@ -37,11 +37,18 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
       .setScale(0.62)
       .setDepth(17 + laneIndex);
 
+    this.shadow = scene.add
+      .image(x, LANE_Y[laneIndex] + 8, ASSET_KEYS.SHADOW)
+      .setDepth(15 + laneIndex)
+      .setScale(0.7, 0.55)
+      .setAlpha(0.55);
+
     this.holo = scene.add
       .image(x + 2, LANE_Y[laneIndex] - this.displayHeight + 8, ASSET_KEYS.PICKUP_SPARK)
       .setDepth(19)
       .setScale(0.7)
-      .setAlpha(0.9);
+      .setAlpha(0.9)
+      .setBlendMode(Phaser.BlendModes.ADD);
 
     scene.tweens.add({
       targets: this.holo,
@@ -68,8 +75,9 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
 
   preUpdate(time, delta) {
     super.preUpdate(time, delta);
-    if (this.rider) this.rider.x = this.x - 18;
+    if (this.rider) this.rider.x = this.x - 22;
     if (this.holo) this.holo.x = this.x + 2;
+    if (this.shadow) this.shadow.x = this.x;
   }
 
   collect() {
@@ -95,6 +103,7 @@ export class RiderPickup extends Phaser.Physics.Arcade.Sprite {
   destroy(fromScene) {
     this.rider?.destroy();
     this.holo?.destroy();
+    this.shadow?.destroy();
     super.destroy(fromScene);
   }
 }

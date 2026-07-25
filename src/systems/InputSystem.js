@@ -25,8 +25,8 @@ export class InputSystem {
     }
 
     scene.input.on('pointerdown', (pointer) => {
-      // Ignore presses on the right-side control gutter.
-      if (pointer.x > scene.scale.width - 160) return;
+      // Ignore presses on control gutters (left lane buttons / right minimap+pause).
+      if (pointer.x < 160 || pointer.x > scene.scale.width - 160) return;
       this.swipeStartY = pointer.y;
     });
 

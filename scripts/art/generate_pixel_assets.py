@@ -1,124 +1,72 @@
 #!/usr/bin/env python3
 """
-High-fidelity 16-bit neon San Francisco pixel pack for ZOOX FUTURE SF.
+Reference-matched pixel pack for ZOOX FUTURE SF.
 
-Design goals (cabinet remaster):
-- Dense readable storefronts (reference-inspired composition)
-- Recognizable SF landmarks (not generic blocks)
-- Detailed Zoox robotaxi + traffic + riders
-- Shared palette, glow, wet-road lighting language
+Targets the uploaded cabinet screenshot composition:
+- dense neon shopfront row (mid band)
+- landmark skyline behind shops
+- wet dark road in lower third
+- soft bloom glows / lamp pools
+- detailed Zoox with light spill
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image
 import math
 import random
 
 ROOT = Path(__file__).resolve().parents[2] / "public" / "assets"
 UPSCALE = 3
 
-# Cabinet palette — cyan / magenta / navy / amber
 C = {
-    "void": (4, 6, 18, 255),
-    "navy": (8, 12, 32, 255),
-    "deep": (16, 22, 52, 255),
-    "mid": (32, 40, 78, 255),
-    "slate": (54, 62, 96, 255),
-    "steel": (78, 88, 120, 255),
-    "brick": (110, 52, 82, 255),
-    "brick2": (86, 40, 64, 255),
-    "teal": (24, 96, 118, 255),
-    "teal2": (18, 70, 92, 255),
-    "road": (36, 40, 56, 255),
-    "road2": (28, 32, 46, 255),
-    "lane": (235, 240, 255, 255),
+    "void": (6, 8, 22, 255),
+    "navy": (10, 14, 36, 255),
+    "deep": (18, 24, 56, 255),
+    "mid": (34, 42, 80, 255),
+    "slate": (56, 64, 98, 255),
+    "steel": (82, 92, 124, 255),
+    "brick": (118, 56, 86, 255),
+    "brick2": (90, 42, 66, 255),
+    "teal": (26, 100, 120, 255),
+    "teal2": (18, 72, 94, 255),
+    "road": (40, 44, 58, 255),
+    "road2": (30, 34, 48, 255),
+    "sidewalk": (62, 66, 82, 255),
+    "lane": (240, 244, 255, 255),
     "cyan": (0, 245, 255, 255),
-    "cyan2": (0, 180, 210, 255),
-    "magenta": (255, 40, 210, 255),
-    "pink": (255, 120, 190, 255),
-    "purple": (130, 70, 255, 255),
-    "blue": (50, 130, 255, 255),
-    "blue2": (30, 80, 190, 255),
-    "yellow": (255, 220, 70, 255),
-    "amber": (255, 170, 55, 255),
-    "orange": (255, 120, 35, 255),
-    "red": (255, 64, 96, 255),
-    "green": (70, 230, 130, 255),
-    "lime": (170, 255, 70, 255),
-    "white": (248, 252, 255, 255),
-    "glass": (12, 18, 34, 255),
-    "glass2": (22, 34, 58, 255),
-    "zoox": (55, 155, 255, 255),
-    "zoox2": (35, 100, 200, 255),
-    "zoox3": (20, 60, 140, 255),
-    "cabin": (160, 90, 255, 160),
-    "moon": (236, 240, 255, 255),
-    "cloud": (145, 125, 195, 165),
-    "cloud2": (110, 95, 160, 120),
+    "cyan2": (0, 185, 215, 255),
+    "magenta": (255, 45, 210, 255),
+    "pink": (255, 125, 195, 255),
+    "purple": (135, 75, 255, 255),
+    "blue": (55, 140, 255, 255),
+    "blue2": (35, 90, 195, 255),
+    "yellow": (255, 225, 80, 255),
+    "amber": (255, 175, 60, 255),
+    "orange": (255, 125, 40, 255),
+    "red": (255, 70, 100, 255),
+    "green": (75, 230, 135, 255),
+    "lime": (175, 255, 80, 255),
+    "white": (250, 252, 255, 255),
+    "glass": (14, 20, 38, 255),
+    "glass2": (24, 36, 62, 255),
+    "zoox": (70, 165, 255, 255),
+    "zoox2": (45, 115, 210, 255),
+    "zoox3": (25, 70, 150, 255),
+    "cabin": (165, 95, 255, 170),
+    "moon": (240, 242, 255, 255),
+    "cloud": (150, 130, 200, 170),
+    "cloud2": (115, 100, 165, 125),
     "skin": (255, 214, 175, 255),
     "skin2": (220, 170, 130, 255),
     "black": (0, 0, 0, 255),
+    "tree": (40, 155, 85, 255),
+    "tree2": (28, 120, 65, 255),
+    "wood": (95, 55, 32, 255),
     "trans": (0, 0, 0, 0),
 }
 
-
-def new(w, h, color=None):
-    return Image.new("RGBA", (w, h), color or C["trans"])
-
-
-def put(img, x, y, color):
-    if 0 <= x < img.width and 0 <= y < img.height and color[3] > 0:
-        if color[3] >= 250:
-            img.putpixel((int(x), int(y)), color)
-        else:
-            # alpha blend
-            r0, g0, b0, a0 = img.getpixel((int(x), int(y)))
-            a = color[3] / 255
-            r = int(r0 * (1 - a) + color[0] * a)
-            g = int(g0 * (1 - a) + color[1] * a)
-            b = int(b0 * (1 - a) + color[2] * a)
-            oa = min(255, a0 + color[3])
-            img.putpixel((int(x), int(y)), (r, g, b, oa))
-
-
-def rect(img, x, y, w, h, color):
-    for yy in range(int(h)):
-        for xx in range(int(w)):
-            put(img, x + xx, y + yy, color)
-
-
-def hline(img, x, y, w, color):
-    for i in range(int(w)):
-        put(img, x + i, y, color)
-
-
-def vline(img, x, y, h, color):
-    for i in range(int(h)):
-        put(img, x, y + i, color)
-
-
-def save(img: Image.Image, rel: str):
-    path = ROOT / rel
-    path.parent.mkdir(parents=True, exist_ok=True)
-    big = img.resize((img.width * UPSCALE, img.height * UPSCALE), Image.NEAREST)
-    big.save(path, "PNG")
-    print(f"wrote {rel}  {big.size[0]}x{big.size[1]}")
-
-
-def glow(img, cx, cy, radius, color, strength=100):
-    cr, cg, cb, _ = color
-    for y in range(-radius, radius + 1):
-        for x in range(-radius, radius + 1):
-            d = math.sqrt(x * x + y * y)
-            if d <= radius:
-                a = int(strength * (1 - d / radius) ** 1.4)
-                if a > 4:
-                    put(img, cx + x, cy + y, (cr, cg, cb, a))
-
-
-# 3x5 pixel font for neon signs
 GLYPHS = {
     "A": ["010", "101", "111", "101", "101"],
     "B": ["110", "101", "110", "101", "110"],
@@ -149,7 +97,62 @@ GLYPHS = {
     "9": ["111", "101", "111", "001", "111"],
     "-": ["000", "000", "111", "000", "000"],
     "&": ["010", "101", "010", "101", "011"],
+    ".": ["000", "000", "000", "000", "010"],
 }
+
+
+def new(w, h, color=None):
+    return Image.new("RGBA", (w, h), color or C["trans"])
+
+
+def put(img, x, y, color):
+    x, y = int(x), int(y)
+    if not (0 <= x < img.width and 0 <= y < img.height):
+        return
+    if color[3] >= 250:
+        img.putpixel((x, y), color)
+        return
+    r0, g0, b0, a0 = img.getpixel((x, y))
+    a = color[3] / 255.0
+    r = int(r0 * (1 - a) + color[0] * a)
+    g = int(g0 * (1 - a) + color[1] * a)
+    b = int(b0 * (1 - a) + color[2] * a)
+    img.putpixel((x, y), (r, g, b, min(255, a0 + color[3])))
+
+
+def rect(img, x, y, w, h, color):
+    for yy in range(int(h)):
+        for xx in range(int(w)):
+            put(img, x + xx, y + yy, color)
+
+
+def hline(img, x, y, w, color):
+    for i in range(int(w)):
+        put(img, x + i, y, color)
+
+
+def vline(img, x, y, h, color):
+    for i in range(int(h)):
+        put(img, x, y + i, color)
+
+
+def glow(img, cx, cy, radius, color, strength=110):
+    cr, cg, cb, _ = color
+    for y in range(-radius, radius + 1):
+        for x in range(-radius, radius + 1):
+            d = math.sqrt(x * x + y * y)
+            if d <= radius:
+                a = int(strength * (1 - d / radius) ** 1.55)
+                if a > 3:
+                    put(img, cx + x, cy + y, (cr, cg, cb, a))
+
+
+def save(img, rel):
+    path = ROOT / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    big = img.resize((img.width * UPSCALE, img.height * UPSCALE), Image.NEAREST)
+    big.save(path, "PNG")
+    print(f"wrote {rel} {big.size[0]}x{big.size[1]}")
 
 
 def text(img, x, y, s, color, tracking=4):
@@ -160,8 +163,6 @@ def text(img, x, y, s, color, tracking=4):
             for col, bit in enumerate(line):
                 if bit == "1":
                     put(img, cx + col, y + row, color)
-                    # neon halo
-                    put(img, cx + col, y + row - 1, (*color[:3], 50))
         cx += tracking
 
 
@@ -181,59 +182,52 @@ def brick_fill(img, x, y, w, h, c1, c2):
         for xx in range(w):
             row = yy // 3
             offset = (row % 2) * 2
-            mortar = (xx + offset) % 5 == 4 or yy % 3 == 2
+            mortar = ((xx + offset) % 5 == 4) or (yy % 3 == 2)
             put(img, x + xx, y + yy, c2 if mortar else c1)
 
 
-def window_grid(img, x, y, w, h, cols, rows, rng, lit_chance=0.65):
+def windows(img, x, y, w, h, cols, rows, rng, chance=0.7):
     cw = max(3, w // cols)
     rh = max(3, h // rows)
     for r in range(rows):
         for c in range(cols):
             wx, wy = x + c * cw + 1, y + r * rh + 1
             ww, wh = max(1, cw - 2), max(1, rh - 2)
-            if rng.random() < lit_chance:
+            if rng.random() < chance:
                 col = rng.choice([C["yellow"], C["amber"], C["cyan2"], C["white"], C["pink"]])
                 rect(img, wx, wy, ww, wh, col)
-                # pane split
                 if ww > 3:
-                    vline(img, wx + ww // 2, wy, wh, (*C["glass"][:3], 100))
+                    vline(img, wx + ww // 2, wy, wh, (*C["glass"][:3], 90))
             else:
                 rect(img, wx, wy, ww, wh, C["glass"])
 
 
-# ---------------------------------------------------------------------------
-# SKY / CLOUDS
-# ---------------------------------------------------------------------------
+# ---------------- SKY / CLOUDS ----------------
 
 def make_sky():
-    img = new(384, 216)
-    for y in range(216):
-        t = y / 215
-        r = int(5 + 12 * t)
-        g = int(7 + 8 * t)
-        b = int(22 + 55 * t)
-        hline(img, 0, y, 384, (r, g, b, 255))
+    img = new(400, 220)
+    # purple-navy night like reference
+    for y in range(220):
+        t = y / 219
+        r = int(12 + 28 * t)
+        g = int(10 + 12 * t)
+        b = int(40 + 55 * t)
+        hline(img, 0, y, 400, (r, g, b, 255))
     rng = random.Random(42)
-    for _ in range(160):
-        put(img, rng.randint(0, 383), rng.randint(0, 120), (255, 255, 255, rng.choice([120, 180, 255])))
-    # moon
-    glow(img, 320, 42, 28, (190, 200, 255, 255), 55)
-    for y in range(-18, 19):
-        for x in range(-18, 19):
-            if x * x + y * y <= 18 * 18:
-                put(img, 320 + x, 42 + y, C["moon"])
-            elif x * x + y * y <= 20 * 20:
-                put(img, 320 + x, 42 + y, (200, 210, 240, 80))
-    # craters
-    put(img, 314, 38, (210, 215, 235, 255))
-    put(img, 324, 46, (210, 215, 235, 255))
-    put(img, 318, 48, (205, 210, 230, 255))
+    for _ in range(180):
+        put(img, rng.randint(0, 399), rng.randint(0, 130), (255, 255, 255, rng.choice([130, 190, 255])))
+    glow(img, 335, 48, 30, (200, 205, 255, 255), 60)
+    for y in range(-20, 21):
+        for x in range(-20, 21):
+            if x * x + y * y <= 20 * 20:
+                put(img, 335 + x, 48 + y, C["moon"])
+    put(img, 328, 42, (215, 218, 235, 255))
+    put(img, 340, 54, (215, 218, 235, 255))
     save(img, "backgrounds/sky.png")
 
 
 def make_clouds():
-    img = new(384, 80)
+    img = new(400, 90)
 
     def puff(cx, cy, w, h, col):
         for y in range(-h, h + 1):
@@ -242,471 +236,406 @@ def make_clouds():
                     put(img, cx + x, cy + y, col)
 
     rng = random.Random(7)
-    for i in range(8):
-        cx = 20 + i * 48 + rng.randint(-5, 5)
-        cy = 28 + rng.randint(-8, 10)
-        puff(cx, cy, 22, 8, C["cloud"])
+    for i in range(9):
+        cx = 16 + i * 44 + rng.randint(-4, 4)
+        cy = 30 + rng.randint(-8, 10)
+        puff(cx, cy, 24, 9, C["cloud"])
         puff(cx + 14, cy + 2, 16, 7, C["cloud"])
-        puff(cx - 12, cy + 3, 14, 6, C["cloud2"])
-        puff(cx + 4, cy - 3, 12, 5, C["cloud2"])
+        puff(cx - 12, cy + 2, 14, 6, C["cloud2"])
     save(img, "backgrounds/clouds.png")
 
 
-# ---------------------------------------------------------------------------
-# SKYLINE LANDMARKS
-# ---------------------------------------------------------------------------
+# ---------------- SKYLINE ----------------
 
 def make_skyline():
-    img = new(560, 140)
+    img = new(640, 150)
     rng = random.Random(99)
-    base = 118
+    base = 130
 
-    for y in range(100, 140):
-        hline(img, 0, y, 560, (55, 45, 100, 12 + (y - 100)))
+    for y in range(110, 150):
+        hline(img, 0, y, 640, (70, 50, 120, 10 + (y - 110)))
 
-    def filler(x, h, w):
+    def tower(x, h, w):
         body = rng.choice([C["deep"], C["mid"], C["navy"]])
         rect(img, x, base - h, w, h, body)
-        window_grid(img, x + 1, base - h + 2, w - 2, h - 6, max(1, w // 4), max(2, h // 8), rng, 0.55)
-        if rng.random() < 0.35:
+        windows(img, x + 1, base - h + 2, w - 2, h - 6, max(1, w // 4), max(2, h // 8), rng, 0.55)
+        if rng.random() < 0.3:
             hline(img, x, base - h - 1, w, rng.choice([C["magenta"], C["cyan"], C["amber"]]))
-        # antenna
-        if rng.random() < 0.25:
-            vline(img, x + w // 2, base - h - 6, 6, C["steel"])
-            put(img, x + w // 2, base - h - 7, C["red"])
 
-    for i in range(28):
-        filler(i * 20 + rng.randint(0, 2), rng.randint(22, 58), rng.randint(8, 16))
+    for i in range(32):
+        tower(i * 20 + rng.randint(0, 2), rng.randint(20, 55), rng.randint(8, 15))
 
-    # --- Salesforce Tower ---
-    sx = 70
-    for i, w in enumerate([18, 17, 16, 15, 14, 13, 12, 11, 9, 7, 5, 3]):
-        y = base - 110 + i * 8
-        rect(img, sx + (18 - w) // 2, y, w, 8, C["slate"] if i % 2 == 0 else C["steel"])
+    # Salesforce
+    sx = 80
+    for i, w in enumerate([20, 19, 18, 16, 15, 14, 12, 10, 8, 6, 4]):
+        y = base - 118 + i * 9
+        rect(img, sx + (20 - w) // 2, y, w, 9, C["slate"] if i % 2 == 0 else C["steel"])
         if i % 2 == 0:
-            hline(img, sx + (18 - w) // 2 + 1, y + 3, max(1, w - 2), C["cyan2"])
-    rect(img, sx + 6, base - 116, 6, 6, C["cyan"])
-    glow(img, sx + 9, base - 116, 10, C["cyan"], 90)
+            hline(img, sx + (20 - w) // 2 + 1, y + 3, max(1, w - 2), C["cyan2"])
+    rect(img, sx + 7, base - 124, 6, 6, C["cyan"])
+    glow(img, sx + 10, base - 124, 12, C["cyan"], 100)
 
-    # --- Transamerica Pyramid ---
-    tx = 160
-    for i in range(56):
-        half = max(1, 18 - i // 3)
-        col = C["mid"] if i % 3 else C["slate"]
-        hline(img, tx + 18 - half, base - 4 - i, half * 2, col)
-        if i % 5 == 0:
-            put(img, tx + 18, base - 4 - i, C["amber"])
-    put(img, tx + 18, base - 60, C["yellow"])
-    glow(img, tx + 18, base - 58, 6, C["amber"], 60)
+    # Transamerica
+    tx = 180
+    for i in range(62):
+        half = max(1, 20 - i // 3)
+        hline(img, tx + 20 - half, base - 4 - i, half * 2, C["mid"] if i % 3 else C["slate"])
+    put(img, tx + 20, base - 66, C["yellow"])
+    glow(img, tx + 20, base - 64, 7, C["amber"], 70)
 
-    # --- Ferry Building ---
-    fx = 250
-    rect(img, fx, base - 34, 56, 34, C["slate"])
-    # arched arcade suggestion
+    # Coit Tower
+    rect(img, 270, base - 72, 8, 50, C["steel"])
+    rect(img, 268, base - 78, 12, 8, C["slate"])
+    for i in range(6):
+        hline(img, 271, base - 78 - i, max(2, 6 - i), C["white"])
+
+    # Ferry Building
+    fx = 300
+    rect(img, fx, base - 36, 58, 36, C["slate"])
+    windows(img, fx + 2, base - 32, 54, 14, 10, 2, rng, 0.85)
     for i in range(7):
-        ax = fx + 4 + i * 7
-        rect(img, ax, base - 14, 5, 10, C["glass"])
-        put(img, ax + 2, base - 15, C["amber"])
-    window_grid(img, fx + 2, base - 30, 52, 12, 10, 2, rng, 0.8)
-    # clock tower
-    rect(img, fx + 24, base - 68, 10, 34, C["mid"])
+        rect(img, fx + 5 + i * 7, base - 14, 5, 10, C["glass"])
+    rect(img, fx + 25, base - 70, 10, 34, C["mid"])
     for i in range(12):
-        hline(img, fx + 26 - i // 2, base - 68 - i, max(2, 6 - i // 2), C["orange"])
-    rect(img, fx + 25, base - 58, 8, 8, C["yellow"])
-    put(img, fx + 28, base - 55, C["black"])  # clock hand cue
-    glow(img, fx + 29, base - 54, 7, C["amber"], 70)
+        hline(img, fx + 27 - i // 2, base - 70 - i, max(2, 6 - i // 2), C["orange"])
+    rect(img, fx + 26, base - 60, 8, 8, C["yellow"])
+    glow(img, fx + 30, base - 56, 8, C["amber"], 75)
 
-    # --- Bay Bridge ---
-    bx = 340
-    for tower_x in (bx + 12, bx + 52):
-        rect(img, tower_x, base - 58, 4, 58, C["orange"])
-        rect(img, tower_x - 2, base - 58, 8, 3, C["amber"])
-    hline(img, bx, base - 22, 80, C["orange"])
-    hline(img, bx, base - 21, 80, C["amber"])
-    for i in range(0, 80, 2):
-        y = base - 22 - int(16 * abs(math.sin(i / 18)))
-        put(img, bx + i, y, (255, 190, 90, 230))
-        put(img, bx + i, y + 1, (255, 140, 40, 120))
-    # deck lights
-    for i in range(0, 80, 6):
-        put(img, bx + i, base - 23, C["yellow"])
+    # Golden Gate Bridge silhouette (reference energy, SF-correct)
+    gx = 400
+    for tower_x in (gx + 14, gx + 58):
+        rect(img, tower_x, base - 70, 5, 70, C["orange"])
+        rect(img, tower_x - 2, base - 70, 9, 4, C["amber"])
+        # cross braces
+        for by in range(base - 60, base - 10, 10):
+            hline(img, tower_x, by, 5, C["amber"])
+    hline(img, gx, base - 28, 95, C["orange"])
+    hline(img, gx, base - 27, 95, C["amber"])
+    for i in range(0, 95, 2):
+        y = base - 28 - int(18 * abs(math.sin(i / 20)))
+        put(img, gx + i, y, (255, 140, 50, 230))
+    for i in range(0, 95, 5):
+        put(img, gx + i, base - 29, C["yellow"])
 
-    # --- Pier 39 ---
-    px = 445
-    rect(img, px, base - 30, 55, 30, C["teal"])
-    rect(img, px + 2, base - 28, 51, 8, C["teal2"])
-    for i in range(7):
-        rect(img, px + 4 + i * 7, base - 18, 5, 12, C["yellow"])
-        put(img, px + 6 + i * 7, base - 16, C["amber"])
-    # carousel
-    rect(img, px + 16, base - 48, 22, 18, C["magenta"])
-    glow(img, px + 27, base - 40, 10, C["magenta"], 70)
-    text(img, px + 18, base - 42, "PIER", C["white"], 4)
-    hline(img, px, base - 31, 55, C["cyan"])
-    # flags
-    for i in range(4):
-        put(img, px + 8 + i * 12, base - 32, C["red"])
+    # Pier 39 / Ferris-ish wheel cue
+    px = 530
+    rect(img, px, base - 28, 50, 28, C["teal"])
+    # wheel
+    cx, cy, rad = px + 22, base - 42, 16
+    for a in range(0, 360, 12):
+        ang = math.radians(a)
+        put(img, cx + int(math.cos(ang) * rad), cy + int(math.sin(ang) * rad), C["magenta"])
+    glow(img, cx, cy, 10, C["magenta"], 60)
+    text(img, px + 8, base - 20, "PIER39", C["white"], 4)
 
-    # --- Painted Ladies ---
-    colors = [C["purple"], C["pink"], C["blue"], C["orange"], C["cyan2"]]
-    for i, col in enumerate(colors):
-        x = 10 + i * 10
-        rect(img, x, base - 32, 9, 32, col)
-        # bay window
-        rect(img, x + 2, base - 22, 5, 8, C["glass2"])
-        put(img, x + 3, base - 20, C["yellow"])
-        put(img, x + 5, base - 20, C["yellow"])
-        # Victorian roof peak
+    # Painted Ladies
+    for i, col in enumerate([C["purple"], C["pink"], C["blue"], C["orange"], C["cyan2"]]):
+        x = 12 + i * 11
+        rect(img, x, base - 34, 10, 34, col)
+        rect(img, x + 2, base - 24, 6, 8, C["glass2"])
+        put(img, x + 3, base - 22, C["yellow"])
+        put(img, x + 6, base - 22, C["yellow"])
         for k in range(5):
-            hline(img, x + 4 - k, base - 33 - k, k * 2 + 1, C["white"])
-        put(img, x + 4, base - 38, C["amber"])
-
-    # Coit-ish tower hint near left
-    rect(img, 50, base - 70, 5, 40, C["steel"])
-    rect(img, 48, base - 74, 9, 6, C["slate"])
+            hline(img, x + 5 - k, base - 35 - k, k * 2 + 1, C["white"])
 
     save(img, "skyline/distant.png")
 
 
-# ---------------------------------------------------------------------------
-# MIDGROUND STREET — dense neon districts
-# ---------------------------------------------------------------------------
+# ---------------- MIDGROUND SHOPS (reference style) ----------------
 
-def streetlight(img, x, ground):
-    vline(img, x, ground - 40, 40, C["steel"])
-    vline(img, x + 1, ground - 40, 40, C["slate"])
-    hline(img, x - 8, ground - 40, 10, C["steel"])
-    rect(img, x - 10, ground - 43, 6, 4, C["yellow"])
-    glow(img, x - 7, ground - 36, 14, C["amber"], 55)
-    # pool on sidewalk
-    glow(img, x - 4, ground - 2, 10, C["amber"], 30)
+def lamp(img, x, ground):
+    vline(img, x, ground - 46, 46, C["steel"])
+    vline(img, x + 1, ground - 46, 46, C["slate"])
+    hline(img, x - 9, ground - 46, 12, C["steel"])
+    rect(img, x - 11, ground - 50, 7, 5, C["yellow"])
+    glow(img, x - 8, ground - 42, 16, C["amber"], 70)
+    glow(img, x - 4, ground - 2, 12, C["amber"], 35)
 
 
 def tree(img, x, ground):
-    rect(img, x, ground - 14, 3, 14, (72, 48, 28, 255))
-    for dy, w in ((-22, 12), (-18, 14), (-14, 10)):
-        rect(img, x - w // 2 + 1, ground + dy, w, 6, (34, 150, 78, 255))
-    put(img, x, ground - 20, (60, 200, 100, 255))
+    # rounded canopy like reference
+    rect(img, x, ground - 16, 3, 16, C["wood"])
+    for r, col in ((11, C["tree2"]), (8, C["tree"])):
+        for y in range(-r, r + 1):
+            for xx in range(-r, r + 1):
+                if xx * xx + y * y <= r * r:
+                    put(img, x + 1 + xx, ground - 24 + y, col)
+    # shadow
+    rect(img, x - 4, ground - 1, 12, 2, (0, 0, 0, 55))
 
 
 def ped(img, x, ground, rng, wave=False):
     skin = rng.choice([C["skin"], C["skin2"]])
     hair = rng.choice([C["black"], C["orange"], C["yellow"], C["purple"], C["red"], C["white"]])
     shirt = rng.choice([C["magenta"], C["cyan"], C["yellow"], C["green"], C["white"], C["orange"], C["pink"], C["blue"]])
-    pants = rng.choice([C["deep"], C["slate"], C["navy"], C["black"]])
-    # head
-    rect(img, x + 1, ground - 16, 4, 4, skin)
-    rect(img, x + 1, ground - 17, 4, 2, hair)
-    # body
-    rect(img, x, ground - 12, 6, 7, shirt)
+    pants = rng.choice([C["deep"], C["slate"], C["navy"]])
+    rect(img, x - 3, ground - 1, 10, 2, (0, 0, 0, 50))  # shadow
+    rect(img, x + 1, ground - 17, 4, 4, skin)
+    rect(img, x + 1, ground - 18, 4, 2, hair)
+    put(img, x + 2, ground - 15, C["black"])
+    put(img, x + 4, ground - 15, C["black"])
+    rect(img, x, ground - 13, 6, 7, shirt)
     if wave:
-        rect(img, x + 6, ground - 11, 3, 2, shirt)
-        put(img, x + 8, ground - 12, skin)
-    else:
-        rect(img, x - 2, ground - 10, 2, 3, shirt)
-    # legs
-    rect(img, x + 1, ground - 5, 2, 5, pants)
-    rect(img, x + 3, ground - 5, 2, 5, pants)
+        rect(img, x + 6, ground - 12, 3, 2, shirt)
+        put(img, x + 8, ground - 13, skin)
+    rect(img, x + 1, ground - 6, 2, 5, pants)
+    rect(img, x + 3, ground - 6, 2, 5, pants)
     put(img, x + 1, ground - 1, C["black"])
     put(img, x + 3, ground - 1, C["black"])
 
 
-def neon_sign_box(img, x, y, w, h, fill, border, label):
-    rect(img, x - 1, y - 1, w + 2, h + 2, border)
-    rect(img, x, y, w, h, fill)
-    # scanlines
-    for i in range(0, h, 2):
-        hline(img, x, y + i, w, (255, 255, 255, 28))
-    text(img, x + 2, y + max(1, (h - 5) // 2), label, C["white"], 4)
-    glow(img, x + w // 2, y + h // 2, max(w, h) // 2 + 2, fill, 40)
-
-
-def storefront(img, x, ground, w, h, body, accent, name, rng, style="standard"):
-    # main mass
-    if style == "brick":
+def shop(img, x, ground, w, h, body, accent, title, sub, rng, kind="std"):
+    # building body
+    if kind == "brick":
         brick_fill(img, x, ground - h, w, h, body, C["brick2"])
     else:
         rect(img, x, ground - h, w, h, body)
-        # subtle vertical panels
-        for px in range(x + 6, x + w - 4, 8):
-            vline(img, px, ground - h + 8, h - 28, (*C["black"][:3], 25))
+        for px in range(x + 5, x + w - 4, 7):
+            vline(img, px, ground - h + 10, h - 36, (*C["black"][:3], 22))
 
-    # cornice / roof lip
+    # roof lip + glow
     hline(img, x - 1, ground - h, w + 2, accent)
     hline(img, x, ground - h + 1, w, C["white"])
-    # roof units
-    rect(img, x + w - 12, ground - h - 6, 6, 6, C["slate"])
-    put(img, x + w - 9, ground - h - 7, accent)
-    if rng.random() < 0.5:
-        rect(img, x + 4, ground - h - 4, 8, 4, C["steel"])
+    glow(img, x + w // 2, ground - h, 10, accent, 45)
 
-    # upper windows
-    window_grid(img, x + 4, ground - h + 12, w - 8, max(12, h - 40), 3, max(2, (h - 40) // 10), rng, 0.7)
+    # roof clutter
+    rect(img, x + w - 14, ground - h - 7, 7, 7, C["slate"])
+    put(img, x + w - 11, ground - h - 8, accent)
 
-    # neon marquee
-    neon_sign_box(img, x + 5, ground - h + 3, w - 10, 9, accent, C["black"], name[:7])
+    # upper floors
+    windows(img, x + 4, ground - h + 14, w - 8, max(16, h - 48), 3, max(2, (h - 48) // 11), rng, 0.75)
 
-    # awning
-    for i in range(5):
+    # main neon sign board
+    rect(img, x + 4, ground - h + 3, w - 8, 10, C["black"])
+    rect(img, x + 5, ground - h + 4, w - 10, 8, accent)
+    for i in range(0, 8, 2):
+        hline(img, x + 5, ground - h + 4 + i, w - 10, (255, 255, 255, 28))
+    text(img, x + 7, ground - h + 5, title[:10], C["white"], 4)
+
+    # subtitle strip (ARCADE 8-BIT style)
+    if sub:
+        rect(img, x + 6, ground - 40, w - 12, 7, C["black"])
+        text(img, x + 8, ground - 39, sub[:12], accent, 4)
+
+    # striped awning
+    for i in range(6):
         col = accent if i % 2 == 0 else C["white"]
-        hline(img, x + 2, ground - 26 + i, w - 4, col if i < 3 else accent)
-    # stripes on awning
-    for sx in range(x + 3, x + w - 3, 4):
-        vline(img, sx, ground - 26, 3, (*C["black"][:3], 40))
+        hline(img, x + 2, ground - 30 + i, w - 4, col)
+    for sx in range(x + 3, x + w - 3, 3):
+        vline(img, sx, ground - 30, 4, (*C["black"][:3], 35))
 
-    # storefront glass
-    rect(img, x + 3, ground - 22, w - 6, 14, C["glass"])
-    # reflections
-    for i in range(3):
-        vline(img, x + 6 + i * 5, ground - 20, 10, (0, 245, 255, 35))
+    # glass storefront
+    rect(img, x + 3, ground - 24, w - 6, 16, C["glass"])
+    for i in range(4):
+        vline(img, x + 7 + i * 6, ground - 22, 12, (0, 245, 255, 40))
     # door
-    dw = 8
+    dw = 9
     dx = x + w // 2 - dw // 2
-    rect(img, dx, ground - 18, dw, 18, C["glass2"])
-    vline(img, dx + dw // 2, ground - 18, 18, C["steel"])
-    put(img, dx + dw - 2, ground - 10, accent)
+    rect(img, dx, ground - 20, dw, 20, C["glass2"])
+    vline(img, dx + dw // 2, ground - 20, 20, C["steel"])
+    put(img, dx + dw - 2, ground - 11, accent)
 
-    # sidewalk spill glow
-    glow(img, x + w // 2, ground - 4, 12, accent, 25)
+    # sidewalk neon spill
+    glow(img, x + w // 2, ground - 3, 14, accent, 30)
 
-    # vertical blade sign for some shops
-    if style in ("blade", "brick") and w >= 50:
+    # blade sign
+    if kind in ("blade", "brick") and w > 55:
         bx = x + w + 1
-        rect(img, bx, ground - h + 8, 7, 34, C["black"])
-        rect(img, bx + 1, ground - h + 9, 5, 32, accent)
-        text_vert(img, bx + 2, ground - h + 12, name[:6], C["white"])
-        glow(img, bx + 3, ground - h + 24, 8, accent, 50)
+        rect(img, bx, ground - h + 10, 8, 40, C["black"])
+        rect(img, bx + 1, ground - h + 11, 6, 38, accent)
+        text_vert(img, bx + 2, ground - h + 14, title[:6], C["white"])
+        glow(img, bx + 4, ground - h + 28, 9, accent, 55)
 
 
 def make_midground():
-    img = new(900, 160)
+    img = new(960, 180)
     rng = random.Random(21)
-    ground = 138
+    ground = 154
 
-    # sidewalk band
-    rect(img, 0, ground, 900, 22, (58, 62, 78, 255))
-    for x in range(0, 900, 6):
-        put(img, x, ground + 1, (74, 78, 94, 255))
-        put(img, x + 3, ground + 8, (48, 52, 66, 255))
-    # curb
-    hline(img, 0, ground - 1, 900, C["cyan2"])
-    hline(img, 0, ground, 900, (20, 24, 36, 255))
+    # sidewalk
+    rect(img, 0, ground, 960, 26, C["sidewalk"])
+    for x in range(0, 960, 5):
+        put(img, x, ground + 2, (78, 82, 98, 255))
+        put(img, x + 2, ground + 12, (50, 54, 70, 255))
+    hline(img, 0, ground - 1, 960, C["cyan2"])
+    hline(img, 0, ground, 960, (18, 20, 30, 255))
 
-    districts = [
-        # x, h, w, body, accent, name, style
-        (6, 100, 84, C["blue2"], C["cyan"], "ZOOX", "standard"),
-        (98, 86, 70, C["brick"], C["magenta"], "ARCADE", "brick"),
-        (178, 94, 64, C["purple"], C["pink"], "DRAGON", "blade"),
-        (252, 88, 74, C["teal"], C["amber"], "RAMEN", "standard"),
-        (336, 102, 60, C["red"], C["orange"], "TECH", "blade"),
-        (406, 90, 72, C["mid"], C["cyan"], "MARKET", "standard"),
-        (488, 92, 66, C["orange"], C["yellow"], "CABLE", "standard"),
-        (564, 84, 70, C["green"], C["lime"], "WHARF", "blade"),
-        (644, 96, 68, C["slate"], C["purple"], "LOMBARD", "standard"),
-        (722, 88, 76, C["brick2"], C["pink"], "CHINA", "brick"),
-        (808, 94, 72, C["teal2"], C["cyan"], "PIER39", "standard"),
+    # Reference-inspired SF shop row (taller, denser)
+    shops = [
+        (4, 118, 96, C["blue2"], C["cyan"], "ZOOX", "STATION", "std"),
+        (108, 104, 82, C["brick"], C["magenta"], "ARCADE", "8-BIT", "brick"),
+        (200, 112, 78, C["purple"], C["pink"], "NEON", "DRAGON", "blade"),
+        (288, 106, 88, C["teal"], C["amber"], "HONGKONG", "RAMEN", "std"),
+        (386, 120, 72, C["red"], C["orange"], "TECHNO", "CITY", "blade"),
+        (468, 108, 84, C["mid"], C["cyan"], "MARKET", "ST", "std"),
+        (562, 110, 76, C["orange"], C["yellow"], "CABLE", "CAR", "std"),
+        (648, 102, 80, C["green"], C["lime"], "WHARF", "PIER", "blade"),
+        (738, 114, 78, C["slate"], C["purple"], "LOMBARD", "HILL", "std"),
+        (826, 108, 86, C["brick2"], C["pink"], "CHINA", "TOWN", "brick"),
     ]
 
-    for x, h, w, body, accent, name, style in districts:
-        storefront(img, x, ground, w, h, body, accent, name, rng, style)
+    for x, h, w, body, accent, title, sub, kind in shops:
+        shop(img, x, ground, w, h, body, accent, title, sub, rng, kind)
 
-        # Zoox Station garage door detail
-        if name == "ZOOX":
-            rect(img, x + 10, ground - 22, w - 20, 18, C["glass2"])
-            for gy in range(ground - 20, ground - 4, 3):
-                hline(img, x + 12, gy, w - 24, C["cyan2"])
-            text(img, x + 18, ground - 16, "STATION", C["cyan"], 4)
+        if title == "ZOOX":
+            # garage bay like reference
+            rect(img, x + 12, ground - 24, w - 24, 20, C["glass2"])
+            for gy in range(ground - 22, ground - 4, 3):
+                hline(img, x + 14, gy, w - 28, C["cyan2"])
+            text(img, x + 22, ground - 16, "OPEN", C["cyan"], 4)
 
-        # Arcade LED trim
-        if name == "ARCADE":
-            for i in range(0, w - 4, 3):
-                put(img, x + 2 + i, ground - h - 2, rng.choice([C["cyan"], C["magenta"], C["yellow"]]))
-            text(img, x + 14, ground - 40, "8-BIT", C["yellow"], 4)
+        if title == "ARCADE":
+            for i in range(0, w - 6, 3):
+                put(img, x + 3 + i, ground - h - 2, rng.choice([C["cyan"], C["magenta"], C["yellow"], C["lime"]]))
 
-        streetlight(img, x + w + 4, ground)
-        if rng.random() < 0.85:
-            tree(img, x + w // 3, ground)
-        ped(img, x + 10, ground, rng, wave=rng.random() < 0.4)
-        ped(img, x + w - 14, ground, rng, wave=False)
-        if rng.random() < 0.45:
-            ped(img, x + w // 2, ground, rng, wave=rng.random() < 0.5)
+        lamp(img, x + w + 5, ground)
+        tree(img, x + max(10, w // 3), ground)
+        ped(img, x + 12, ground, rng, wave=rng.random() < 0.45)
+        ped(img, x + w - 16, ground, rng, wave=False)
+        if rng.random() < 0.5:
+            ped(img, x + w // 2 - 2, ground, rng, wave=rng.random() < 0.4)
 
-    # Chinatown lantern string over Dragon/China
-    for i in range(16):
-        lx = 190 + i * 8
-        vline(img, lx + 1, ground - 108, 8, C["steel"])
-        rect(img, lx, ground - 100, 4, 5, C["red"])
-        put(img, lx + 1, ground - 99, C["orange"])
-        glow(img, lx + 2, ground - 98, 4, C["orange"], 40)
-
-    # Cable car on tracks
-    rect(img, 500, ground - 20, 30, 14, C["red"])
-    rect(img, 504, ground - 28, 12, 8, C["yellow"])
-    rect(img, 508, ground - 26, 10, 5, C["glass"])
-    rect(img, 520, ground - 18, 6, 6, C["wood"] if False else (90, 50, 30, 255))
-    put(img, 506, ground - 6, C["black"])
-    put(img, 524, ground - 6, C["black"])
-    hline(img, 490, ground - 2, 60, (190, 190, 200, 255))
-    hline(img, 490, ground - 1, 60, (140, 140, 150, 255))
-    # trolley pole
-    vline(img, 514, ground - 40, 14, C["steel"])
-    hline(img, 514, ground - 40, 10, C["steel"])
-
-    # Lombard zigzag hedge/rail
+    # Chinatown lanterns
     for i in range(18):
-        hx = 660 + (i % 2) * 3
-        hy = ground - 55 - i * 2
-        hline(img, hx, hy, 6, C["white"])
-        put(img, hx + 2, hy + 1, C["green"])
+        lx = 210 + i * 7
+        vline(img, lx + 1, ground - 122, 10, C["steel"])
+        rect(img, lx, ground - 112, 4, 5, C["red"])
+        put(img, lx + 1, ground - 111, C["orange"])
+        glow(img, lx + 2, ground - 110, 4, C["orange"], 45)
 
-    # Market street banner
-    hline(img, 410, ground - 110, 60, C["magenta"])
-    text(img, 420, ground - 116, "MARKET", C["white"], 4)
+    # Cable car
+    rect(img, 575, ground - 22, 34, 16, C["red"])
+    rect(img, 579, ground - 30, 14, 9, C["yellow"])
+    rect(img, 583, ground - 28, 10, 5, C["glass"])
+    put(img, 582, ground - 6, C["black"])
+    put(img, 600, ground - 6, C["black"])
+    hline(img, 560, ground - 2, 70, (195, 195, 205, 255))
+    vline(img, 590, ground - 44, 16, C["steel"])
+    hline(img, 590, ground - 44, 12, C["steel"])
+
+    # Lombard zigzag
+    for i in range(20):
+        hline(img, 755 + (i % 2) * 3, ground - 60 - i * 2, 7, C["white"])
+        put(img, 757 + (i % 2) * 3, ground - 59 - i * 2, C["green"])
 
     save(img, "skyline/midground.png")
 
 
-# ---------------------------------------------------------------------------
-# ROAD
-# ---------------------------------------------------------------------------
+# ---------------- ROAD ----------------
 
 def make_road():
-    img = new(384, 110)
-    for y in range(110):
-        # subtle perspective darkening toward bottom
-        t = y / 109
-        shade = int(34 + 8 * t + (y % 3))
-        hline(img, 0, y, 384, (shade, shade + 2, shade + 14, 255))
+    img = new(400, 120)
+    for y in range(120):
+        t = y / 119
+        shade = int(32 + 10 * t + (y % 3))
+        hline(img, 0, y, 400, (shade, shade + 2, shade + 12, 255))
 
     # wet reflective bands
-    for y in (10, 26, 42, 58, 74, 90):
-        hline(img, 0, y, 384, (90, 110, 150, 35))
-        hline(img, 20, y + 1, 120, (0, 245, 255, 18))
-        hline(img, 200, y + 2, 100, (255, 40, 210, 14))
+    for y in (8, 22, 36, 50, 64, 78, 92, 106):
+        hline(img, 0, y, 400, (95, 115, 155, 32))
+        hline(img, 30, y + 1, 110, (0, 245, 255, 16))
+        hline(img, 180, y + 2, 90, (255, 45, 210, 12))
+        hline(img, 300, y + 1, 70, (255, 225, 80, 10))
 
-    # lane dashes
-    for y in (36, 72):
+    # 3-lane dashes
+    for y in (40, 80):
         x = 0
-        while x < 384:
-            hline(img, x, y, 14, C["lane"])
-            hline(img, x, y + 1, 14, (180, 190, 220, 160))
-            x += 22
+        while x < 400:
+            hline(img, x, y, 16, C["lane"])
+            hline(img, x, y + 1, 16, (180, 190, 220, 150))
+            x += 24
 
     # neon curbs
-    hline(img, 0, 0, 384, C["cyan"])
-    hline(img, 0, 1, 384, C["cyan2"])
-    hline(img, 0, 108, 384, C["magenta"])
-    hline(img, 0, 109, 384, C["pink"])
+    hline(img, 0, 0, 400, C["cyan"])
+    hline(img, 0, 1, 400, C["cyan2"])
+    hline(img, 0, 118, 400, C["magenta"])
+    hline(img, 0, 119, 400, C["pink"])
 
-    # streetlight reflection pools
-    for x in (48, 140, 240, 330):
-        glow(img, x, 14, 16, C["amber"], 40)
-        glow(img, x + 10, 50, 12, C["cyan"], 20)
+    # lamp pools
+    for x in (50, 140, 230, 320):
+        glow(img, x, 16, 18, C["amber"], 45)
+        glow(img, x + 20, 55, 14, C["cyan"], 22)
 
     save(img, "roads/road.png")
 
 
 def make_road_reflection():
-    img = new(384, 110)
-    for y in range(110):
+    img = new(400, 120)
+    for y in range(120):
         if y % 4 == 0:
-            hline(img, 0, y, 384, (0, 245, 255, 14))
+            hline(img, 0, y, 400, (0, 245, 255, 15))
         if y % 6 == 0:
-            hline(img, 30, y, 100, (255, 40, 210, 12))
+            hline(img, 40, y, 110, (255, 45, 210, 12))
         if y % 8 == 0:
-            hline(img, 180, y, 90, (255, 220, 70, 10))
-        if y % 10 == 0:
-            hline(img, 280, y, 70, (130, 70, 255, 10))
+            hline(img, 200, y, 90, (255, 225, 80, 10))
     save(img, "roads/reflections.png")
 
 
-# ---------------------------------------------------------------------------
-# ZOOX
-# ---------------------------------------------------------------------------
+# ---------------- ZOOX ----------------
 
 def draw_zoox(frame=0):
-    img = new(80, 48)
-    # underglow
-    glow(img, 40, 40, 22, C["cyan"], 85)
-    glow(img, 40, 42, 14, C["blue"], 50)
+    img = new(88, 52)
+    # soft headlight / underglow spills (reference lighting)
+    glow(img, 72, 28, 16, C["cyan"], 70)
+    glow(img, 72, 30, 10, C["white"], 40)
+    glow(img, 44, 44, 24, C["cyan"], 90)
+    glow(img, 18, 28, 10, C["red"], 45)
 
-    # shadow
-    rect(img, 16, 40, 50, 3, (0, 0, 0, 60))
+    # ground shadow
+    rect(img, 18, 44, 54, 4, (0, 0, 0, 70))
 
-    # main body (rounded cube)
-    rect(img, 14, 14, 52, 22, C["zoox"])
-    # top bevel
-    rect(img, 16, 11, 48, 5, C["zoox2"])
-    hline(img, 18, 10, 44, C["zoox3"])
-    # side bevels
-    vline(img, 14, 14, 22, C["zoox2"])
-    vline(img, 65, 14, 22, C["zoox2"])
-    # bottom skirt
-    rect(img, 15, 34, 50, 3, C["zoox3"])
+    # body
+    rect(img, 16, 14, 56, 24, C["zoox"])
+    rect(img, 18, 11, 52, 6, C["zoox2"])
+    hline(img, 20, 10, 48, C["zoox3"])
+    vline(img, 16, 14, 24, C["zoox2"])
+    vline(img, 71, 14, 24, C["zoox2"])
+    rect(img, 17, 36, 54, 3, C["zoox3"])
 
-    # panoramic glass band
-    rect(img, 18, 16, 44, 13, C["glass"])
-    # cabin purple glow
-    rect(img, 20, 18, 14, 9, C["cabin"])
-    rect(img, 46, 18, 14, 9, C["cabin"])
-    # glass highlight
-    hline(img, 20, 17, 12, (180, 220, 255, 70))
-    # door seam
-    vline(img, 40, 15, 18, (15, 35, 70, 220))
-    vline(img, 41, 16, 16, (80, 160, 255, 60))
+    # glass
+    rect(img, 20, 17, 48, 14, C["glass"])
+    rect(img, 22, 19, 16, 10, C["cabin"])
+    rect(img, 50, 19, 16, 10, C["cabin"])
+    hline(img, 22, 18, 14, (190, 225, 255, 80))
+    vline(img, 44, 16, 20, (18, 40, 80, 230))
+    vline(img, 45, 17, 18, (90, 170, 255, 55))
 
-    # roof sensor bar
-    rect(img, 34, 6, 12, 5, C["slate"])
-    rect(img, 36, 5, 8, 2, C["steel"])
-    put(img, 37, 4, C["cyan"])
-    put(img, 42, 4, C["magenta"])
-    glow(img, 37, 4, 3, C["cyan"], 80)
-    glow(img, 42, 4, 3, C["magenta"], 80)
+    # sensors
+    rect(img, 38, 6, 12, 5, C["slate"])
+    rect(img, 40, 5, 8, 2, C["steel"])
+    put(img, 41, 4, C["cyan"])
+    put(img, 46, 4, C["magenta"])
+    glow(img, 41, 4, 3, C["cyan"], 90)
+    glow(img, 46, 4, 3, C["magenta"], 90)
+    rect(img, 12, 20, 4, 9, C["slate"])
+    rect(img, 72, 20, 4, 9, C["slate"])
+    put(img, 13, 22, C["cyan"])
+    put(img, 73, 22, C["cyan"])
 
-    # side sensor pods
-    rect(img, 10, 19, 4, 8, C["slate"])
-    rect(img, 66, 19, 4, 8, C["slate"])
-    put(img, 11, 21, C["cyan"])
-    put(img, 67, 21, C["cyan"])
-    put(img, 11, 24, C["magenta"])
-    put(img, 67, 24, C["magenta"])
-
-    # headlights (front = right for side view driving right-facing feel; game scrolls left so front is right)
-    rect(img, 64, 23, 5, 3, C["white"])
-    rect(img, 64, 27, 5, 3, C["yellow"])
-    glow(img, 68, 25, 5, C["white"], 60)
-    # brake / rear
-    rect(img, 12, 23, 3, 5, C["red"])
-    put(img, 12, 24, C["pink"])
-
-    # ZOOX badge
-    text(img, 24, 31, "ZOOX", C["white"], 4)
-
-    # wheel modules (4 visible as 2 pairs in side view — show detailed modules)
-    wy = 36 + (frame % 2)
-    for wx in (20, 52):
-        # suspension arm
-        rect(img, wx - 1, 34, 10, 2, C["zoox3"])
-        # wheel
-        rect(img, wx, wy, 9, 9, C["black"])
-        rect(img, wx + 1, wy + 1, 7, 7, C["slate"])
-        # hub rotation
-        if frame % 2 == 0:
-            put(img, wx + 3, wy + 2, C["cyan"])
-            put(img, wx + 5, wy + 5, C["white"])
-            hline(img, wx + 2, wy + 4, 5, C["cyan2"])
-        else:
-            put(img, wx + 5, wy + 2, C["cyan"])
-            put(img, wx + 3, wy + 5, C["white"])
-            vline(img, wx + 4, wy + 2, 5, C["cyan2"])
-        # rim highlight
-        put(img, wx + 1, wy + 1, C["steel"])
-
-    # turn signal blink on frame
+    # lights
+    rect(img, 70, 24, 6, 3, C["white"])
+    rect(img, 70, 28, 6, 3, C["yellow"])
+    rect(img, 14, 24, 3, 6, C["red"])
+    put(img, 14, 25, C["pink"])
     if frame % 2:
-        put(img, 63, 21, C["amber"])
-        put(img, 14, 21, C["amber"])
+        put(img, 69, 21, C["amber"])
+        put(img, 16, 21, C["amber"])
 
+    text(img, 28, 33, "ZOOX", C["white"], 4)
+
+    # wheels
+    wy = 38 + (frame % 2)
+    for wx in (22, 56):
+        rect(img, wx - 1, 36, 11, 2, C["zoox3"])
+        rect(img, wx, wy, 10, 10, C["black"])
+        rect(img, wx + 1, wy + 1, 8, 8, C["slate"])
+        if frame % 2 == 0:
+            hline(img, wx + 2, wy + 5, 6, C["cyan"])
+            put(img, wx + 4, wy + 3, C["white"])
+        else:
+            vline(img, wx + 5, wy + 2, 6, C["cyan"])
+            put(img, wx + 3, wy + 5, C["white"])
+        put(img, wx + 1, wy + 1, C["steel"])
     return img
 
 
@@ -715,184 +644,163 @@ def make_zoox():
         save(draw_zoox(i), f"zoox/zoox_{i}.png")
     save(draw_zoox(0), "zoox/zoox.png")
 
-    cone = new(64, 28)
-    for x in range(64):
-        spread = int(1 + (x / 63) * 12)
-        for y in range(28):
-            if abs(y - 14) <= spread:
-                a = int((1 - x / 63) * 95)
-                # warmer core
-                if abs(y - 14) < spread * 0.4:
-                    put(cone, x, y, (255, 255, 240, a))
+    # soft headlight cone spill
+    cone = new(72, 32)
+    for x in range(72):
+        spread = int(1 + (x / 71) * 14)
+        for y in range(32):
+            if abs(y - 16) <= spread:
+                a = int((1 - x / 71) * 100)
+                if abs(y - 16) < spread * 0.35:
+                    put(cone, x, y, (220, 255, 230, a))  # cyan-green like reference
                 else:
-                    put(cone, x, y, (200, 230, 255, a // 2))
+                    put(cone, x, y, (120, 230, 255, a // 2))
     save(cone, "effects/headlight_cone.png")
 
+    # soft oval ground shadow sprite
+    sh = new(48, 12)
+    for y in range(12):
+        for x in range(48):
+            nx = (x - 24) / 24
+            ny = (y - 6) / 6
+            if nx * nx + ny * ny <= 1:
+                a = int(90 * (1 - (nx * nx + ny * ny)))
+                put(sh, x, y, (0, 0, 0, a))
+    save(sh, "effects/shadow.png")
 
-# ---------------------------------------------------------------------------
-# TRAFFIC
-# ---------------------------------------------------------------------------
+    # rear red light spill
+    red = new(28, 18)
+    glow(red, 14, 9, 12, C["red"], 100)
+    save(red, "effects/taillight_glow.png")
 
-def vehicle(body, accent, w=52, h=24, kind="car"):
-    img = new(w + 12, h + 16)
-    # shadow
-    rect(img, 6, h + 8, w, 3, (0, 0, 0, 50))
-    # body
-    rect(img, 6, 8, w, h - 2, body)
-    # roof
+
+# ---------------- TRAFFIC / RIDERS / FX / UI ----------------
+
+def vehicle(body, accent, w=54, h=24, kind="car"):
+    img = new(w + 14, h + 18)
+    rect(img, 8, h + 10, w, 3, (0, 0, 0, 55))
+    rect(img, 7, 8, w, h - 2, body)
     if kind == "bus":
-        rect(img, 8, 4, w - 6, 8, accent)
+        rect(img, 9, 4, w - 6, 8, accent)
         for i in range(6):
-            rect(img, 10 + i * 9, 10, 7, 6, C["glass"])
-            put(img, 12 + i * 9, 11, C["yellow"])
+            rect(img, 11 + i * 9, 10, 7, 6, C["glass"])
     elif kind == "truck":
-        rect(img, 8, 5, 18, 12, accent)
-        rect(img, 28, 9, w - 24, 12, body)
-        rect(img, 10, 8, 12, 7, C["glass"])
-        # cargo ribs
-        for i in range(3):
-            vline(img, 34 + i * 8, 10, 10, (*C["black"][:3], 40))
+        rect(img, 9, 5, 18, 12, accent)
+        rect(img, 29, 9, w - 24, 12, body)
+        rect(img, 11, 8, 12, 7, C["glass"])
     elif kind == "taxi":
-        rect(img, 14, 4, w - 20, 8, accent)
-        rect(img, 16, 9, w - 24, 7, C["glass"])
+        rect(img, 15, 4, w - 20, 8, accent)
+        rect(img, 17, 9, w - 24, 7, C["glass"])
         rect(img, w // 2 + 2, 2, 9, 3, C["yellow"])
-        put(img, w // 2 + 5, 1, C["white"])
-        text(img, 18, h - 2, "TAXI", C["black"], 4)
+        text(img, 18, h, "TAXI", C["black"], 4)
     else:
-        rect(img, 14, 4, w - 20, 8, accent)
-        rect(img, 16, 9, w - 24, 7, C["glass"])
-        hline(img, 18, 10, 8, (200, 230, 255, 60))
-
-    # lights — oncoming so front faces left
-    rect(img, 3, 14, 4, 3, C["yellow"])
-    glow(img, 4, 15, 4, C["yellow"], 50)
-    rect(img, w + 5, 14, 3, 4, C["red"])
-    # chrome line
-    hline(img, 8, 8 + h - 4, w - 4, (255, 255, 255, 40))
-    # wheels
-    for wx in (14, w - 4):
-        rect(img, wx, h + 4, 8, 8, C["black"])
-        rect(img, wx + 1, h + 5, 6, 6, C["slate"])
-        put(img, wx + 3, h + 7, C["steel"])
+        rect(img, 15, 4, w - 20, 8, accent)
+        rect(img, 17, 9, w - 24, 7, C["glass"])
+        hline(img, 19, 10, 10, (200, 230, 255, 70))
+    rect(img, 3, 14, 5, 3, C["yellow"])
+    glow(img, 5, 15, 5, C["yellow"], 55)
+    rect(img, w + 6, 14, 3, 4, C["red"])
+    glow(img, w + 7, 16, 4, C["red"], 40)
+    for wx in (16, w - 2):
+        rect(img, wx, h + 5, 8, 8, C["black"])
+        rect(img, wx + 1, h + 6, 6, 6, C["slate"])
     return img
 
 
 def make_traffic():
-    specs = [
-        ("sedan", C["orange"], C["amber"], 50, 22, "car"),
-        ("suv", C["purple"], C["magenta"], 52, 26, "car"),
-        ("van", C["blue"], C["cyan"], 56, 24, "car"),
-        ("taxi", C["yellow"], C["black"], 50, 22, "taxi"),
-        ("ev", C["green"], C["cyan"], 50, 22, "car"),
-        ("bus", C["red"], C["white"], 70, 28, "bus"),
-        ("truck", C["slate"], C["orange"], 64, 28, "truck"),
-    ]
-    for name, body, accent, w, h, kind in specs:
+    for name, body, accent, w, h, kind in [
+        ("sedan", C["orange"], C["amber"], 52, 22, "car"),
+        ("suv", C["purple"], C["magenta"], 54, 26, "car"),
+        ("van", C["blue"], C["cyan"], 58, 24, "car"),
+        ("taxi", C["yellow"], C["black"], 52, 22, "taxi"),
+        ("ev", C["green"], C["cyan"], 52, 22, "car"),
+        ("bus", C["red"], C["white"], 72, 28, "bus"),
+        ("truck", C["slate"], C["orange"], 66, 28, "truck"),
+    ]:
         save(vehicle(body, accent, w, h, kind), f"traffic/{name}.png")
 
 
-# ---------------------------------------------------------------------------
-# RIDERS / KIOSK
-# ---------------------------------------------------------------------------
-
-def person(shirt, hair, wave=True):
-    img = new(20, 32)
+def person(shirt, hair):
+    img = new(20, 34)
+    rect(img, 4, 31, 12, 2, (0, 0, 0, 55))
     rect(img, 7, 2, 6, 6, C["skin"])
     rect(img, 7, 1, 6, 2, hair)
-    # eyes
     put(img, 8, 4, C["black"])
     put(img, 11, 4, C["black"])
-    rect(img, 6, 9, 8, 10, shirt)
-    if wave:
-        rect(img, 14, 10, 4, 2, shirt)
-        put(img, 17, 9, C["skin"])
-    rect(img, 7, 19, 2, 9, C["deep"])
-    rect(img, 11, 19, 2, 9, C["deep"])
-    put(img, 7, 28, C["black"])
-    put(img, 11, 28, C["black"])
+    rect(img, 6, 9, 8, 11, shirt)
+    rect(img, 14, 10, 4, 2, shirt)
+    put(img, 17, 9, C["skin"])
+    rect(img, 7, 20, 2, 10, C["deep"])
+    rect(img, 11, 20, 2, 10, C["deep"])
+    put(img, 7, 30, C["black"])
+    put(img, 11, 30, C["black"])
     return img
 
 
 def make_riders():
-    outfits = [
+    for name, shirt, hair in [
         ("rider_a", C["magenta"], C["black"]),
         ("rider_b", C["cyan"], C["purple"]),
         ("rider_c", C["yellow"], C["orange"]),
         ("rider_d", C["green"], C["blue"]),
         ("rider_e", C["white"], C["red"]),
-    ]
-    for name, shirt, hair in outfits:
+    ]:
         save(person(shirt, hair), f"riders/{name}.png")
 
-    k = new(36, 48)
-    glow(k, 18, 10, 12, C["cyan"], 90)
-    # pole
-    rect(k, 16, 18, 4, 26, C["steel"])
-    # kiosk head
-    rect(k, 8, 10, 20, 14, C["slate"])
-    rect(k, 10, 12, 16, 10, C["cyan"])
-    for i in range(0, 10, 2):
-        hline(k, 10, 12 + i, 16, (255, 255, 255, 30))
-    text(k, 12, 14, "Z", C["white"], 4)
-    # hologram diamond
+    k = new(36, 50)
+    glow(k, 18, 12, 14, C["cyan"], 100)
+    rect(k, 16, 20, 4, 26, C["steel"])
+    rect(k, 8, 12, 20, 14, C["slate"])
+    rect(k, 10, 14, 16, 10, C["cyan"])
+    text(k, 14, 16, "Z", C["white"], 4)
     for i in range(8):
-        hline(k, 18 - i, 1 + i, i * 2 + 1, (0, 245, 255, 210))
+        hline(k, 18 - i, 2 + i, i * 2 + 1, (0, 245, 255, 210))
     for i in range(8):
-        hline(k, 11 + i, 9 + i, 15 - i * 2, (0, 245, 255, 130))
-    put(k, 18, 8, C["white"])
-    # base
-    rect(k, 10, 42, 16, 4, C["mid"])
-    glow(k, 18, 44, 10, C["cyan"], 50)
+        hline(k, 11 + i, 10 + i, 15 - i * 2, (0, 245, 255, 120))
+    rect(k, 10, 44, 16, 4, C["mid"])
+    rect(k, 8, 47, 20, 2, (0, 0, 0, 60))
     save(k, "riders/kiosk.png")
 
-
-# ---------------------------------------------------------------------------
-# FX / UI
-# ---------------------------------------------------------------------------
 
 def make_effects():
     spark = new(18, 18)
     glow(spark, 9, 9, 8, C["cyan"], 220)
     put(spark, 9, 9, C["white"])
-    for a, d in [(0, 7), (1, 6), (2, 7), (3, 6)]:
-        ang = a * math.pi / 2
-        put(spark, 9 + int(math.cos(ang) * d), 9 + int(math.sin(ang) * d), C["white"])
     save(spark, "effects/pickup_spark.png")
 
     burst = new(32, 32)
     for i in range(18):
         ang = i / 18 * math.tau
         for d in range(2, 15):
-            col = C["magenta"] if i % 2 == 0 else C["cyan"]
-            put(burst, 16 + int(math.cos(ang) * d), 16 + int(math.sin(ang) * d), col)
-    glow(burst, 16, 16, 6, C["white"], 100)
+            put(burst, 16 + int(math.cos(ang) * d), 16 + int(math.sin(ang) * d),
+                C["magenta"] if i % 2 == 0 else C["cyan"])
     save(burst, "effects/neon_burst.png")
 
     rain = new(3, 12)
     vline(rain, 1, 0, 12, (200, 220, 255, 160))
     vline(rain, 0, 2, 8, (200, 220, 255, 70))
-    vline(rain, 2, 3, 7, (200, 220, 255, 50))
     save(rain, "effects/raindrop.png")
 
     frag = new(7, 7)
     rect(frag, 1, 1, 5, 5, C["orange"])
     put(frag, 0, 0, C["yellow"])
-    put(frag, 6, 2, C["red"])
     save(frag, "effects/collision_fragment.png")
 
 
 def make_ui():
+    # Solid arcade top bar like reference
+    bar = new(320, 22)
+    rect(bar, 0, 0, 320, 22, (12, 20, 48, 245))
+    hline(bar, 0, 0, 320, C["cyan"])
+    hline(bar, 0, 21, 320, C["magenta"])
+    save(bar, "ui/hud_bar.png")
+
     panel = new(108, 20)
-    rect(panel, 0, 0, 108, 20, (6, 10, 26, 230))
-    # double border
+    rect(panel, 0, 0, 108, 20, (8, 14, 34, 230))
     hline(panel, 0, 0, 108, C["cyan"])
     hline(panel, 0, 19, 108, C["cyan"])
     vline(panel, 0, 0, 20, C["cyan"])
     vline(panel, 107, 0, 20, C["cyan"])
-    hline(panel, 2, 2, 104, C["magenta"])
-    hline(panel, 2, 17, 104, C["magenta"])
-    for x, y in [(2, 2), (105, 2), (2, 17), (105, 17)]:
-        put(panel, x, y, C["yellow"])
     save(panel, "ui/hud_panel.png")
 
     heart = new(11, 10)
@@ -908,45 +816,42 @@ def make_ui():
     rect(btn, 0, 0, 84, 28, C["cyan"])
     rect(btn, 2, 2, 80, 24, C["blue"])
     hline(btn, 0, 0, 84, C["white"])
-    hline(btn, 0, 27, 84, C["cyan2"])
-    # pixel corners
-    put(btn, 0, 0, C["yellow"])
-    put(btn, 83, 0, C["yellow"])
     save(btn, "ui/button.png")
 
-    radar = new(56, 56)
-    rect(radar, 0, 0, 56, 56, (5, 8, 22, 220))
-    for i in range(56):
+    # Minimap like reference
+    radar = new(64, 64)
+    rect(radar, 0, 0, 64, 64, (8, 14, 30, 220))
+    for i in range(64):
         put(radar, i, 0, C["green"])
-        put(radar, i, 55, C["green"])
+        put(radar, i, 63, C["green"])
         put(radar, 0, i, C["green"])
-        put(radar, 55, i, C["green"])
-    # grid
-    for i in range(8, 56, 8):
-        hline(radar, 2, i, 52, (70, 255, 160, 35))
-        vline(radar, i, 2, 52, (70, 255, 160, 25))
-    hline(radar, 4, 18, 48, (70, 255, 160, 80))
-    hline(radar, 4, 36, 48, (70, 255, 160, 80))
+        put(radar, 63, i, C["green"])
+    for i in range(8, 64, 8):
+        hline(radar, 2, i, 60, (70, 255, 160, 40))
+        vline(radar, i, 2, 60, (70, 255, 160, 28))
+    # three lanes
+    hline(radar, 6, 20, 52, (70, 255, 160, 90))
+    hline(radar, 6, 32, 52, (70, 255, 160, 90))
+    hline(radar, 6, 44, 52, (70, 255, 160, 90))
     save(radar, "ui/radar.png")
 
 
 def make_menu_banner():
-    img = new(384, 216)
-    sky = Image.open(ROOT / "backgrounds" / "sky.png").resize((384, 216), Image.NEAREST)
+    img = new(400, 220)
+    sky = Image.open(ROOT / "backgrounds" / "sky.png").resize((400, 220), Image.NEAREST)
     img.alpha_composite(sky, (0, 0))
-    clouds = Image.open(ROOT / "backgrounds" / "clouds.png").resize((384, 80), Image.NEAREST)
-    img.alpha_composite(clouds, (0, 24))
-    distant = Image.open(ROOT / "skyline" / "distant.png").resize((384, 110), Image.NEAREST)
-    img.alpha_composite(distant, (0, 50))
-    mid = Image.open(ROOT / "skyline" / "midground.png").resize((384, 100), Image.NEAREST)
-    img.alpha_composite(mid, (0, 85))
-    road = Image.open(ROOT / "roads" / "road.png").resize((384, 55), Image.NEAREST)
-    img.alpha_composite(road, (0, 161))
-    # vignette edges
-    for x in range(40):
-        a = int((1 - x / 40) * 90)
-        vline(img, x, 0, 216, (4, 6, 18, a))
-        vline(img, 383 - x, 0, 216, (4, 6, 18, a))
+    clouds = Image.open(ROOT / "backgrounds" / "clouds.png").resize((400, 90), Image.NEAREST)
+    img.alpha_composite(clouds, (0, 20))
+    distant = Image.open(ROOT / "skyline" / "distant.png").resize((400, 120), Image.NEAREST)
+    img.alpha_composite(distant, (0, 46))
+    mid = Image.open(ROOT / "skyline" / "midground.png").resize((400, 110), Image.NEAREST)
+    img.alpha_composite(mid, (0, 78))
+    road = Image.open(ROOT / "roads" / "road.png").resize((400, 55), Image.NEAREST)
+    img.alpha_composite(road, (0, 165))
+    for x in range(50):
+        a = int((1 - x / 50) * 100)
+        vline(img, x, 0, 220, (6, 8, 22, a))
+        vline(img, 399 - x, 0, 220, (6, 8, 22, a))
     save(img, "ui/menu_bg.png")
 
 
@@ -964,7 +869,7 @@ def main():
     make_effects()
     make_ui()
     make_menu_banner()
-    print("High-fidelity pixel pack complete.")
+    print("Reference-matched pixel pack complete.")
 
 
 if __name__ == "__main__":
