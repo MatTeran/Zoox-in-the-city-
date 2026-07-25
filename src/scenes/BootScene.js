@@ -82,10 +82,13 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    // Force crisp pixels on every loaded texture.
+    // Crisp pixels for gameplay sprites; linear for the painted menu plate.
     this.textures.getTextureKeys().forEach((key) => {
       if (key === '__DEFAULT' || key === '__MISSING') return;
-      this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+      const mode = key === ASSET_KEYS.MENU_BG
+        ? Phaser.Textures.FilterMode.LINEAR
+        : Phaser.Textures.FilterMode.NEAREST;
+      this.textures.get(key).setFilter(mode);
     });
 
     if (!this.anims.exists('zoox-drive')) {
