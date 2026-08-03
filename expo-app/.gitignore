@@ -7,3 +7,5 @@ assets/www/
 .env.*
 !.env.example
 *.log
+game-www/
+assets/www/
