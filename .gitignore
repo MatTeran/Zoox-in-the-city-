@@ -23,3 +23,4 @@ ios/
 *.p8
 *.p12
 *.mobileprovision
+expo-app/game-www/
