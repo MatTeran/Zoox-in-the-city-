@@ -63,12 +63,12 @@ export class BootScene extends Phaser.Scene {
       this.load.image(ASSET_KEYS.TRAFFIC[i], `assets/traffic/${name}.png`);
     });
 
-    // Riders / kiosk
-    ASSET_KEYS.RIDERS.forEach((key, i) => {
-      const file = ['a', 'b', 'c', 'd', 'e'][i];
-      this.load.image(key, `assets/riders/rider_${file}.png`);
+    // Z coins
+    this.load.image(ASSET_KEYS.ZCOIN, 'assets/coins/zcoin.png');
+    this.load.image(ASSET_KEYS.ZCOIN_HUD, 'assets/coins/zcoin_hud.png');
+    ASSET_KEYS.ZCOIN_FRAMES.forEach((key, i) => {
+      this.load.image(key, `assets/coins/zcoin_${i}.png`);
     });
-    this.load.image(ASSET_KEYS.KIOSK, 'assets/riders/kiosk.png');
 
     // FX / UI
     this.load.image(ASSET_KEYS.PICKUP_SPARK, 'assets/effects/pickup_spark.png');
@@ -98,6 +98,15 @@ export class BootScene extends Phaser.Scene {
         key: 'zoox-drive',
         frames: [{ key: ASSET_KEYS.ZOOX }, { key: ASSET_KEYS.ZOOX_1 }],
         frameRate: 8,
+        repeat: -1,
+      });
+    }
+
+    if (!this.anims.exists('zcoin-spin')) {
+      this.anims.create({
+        key: 'zcoin-spin',
+        frames: ASSET_KEYS.ZCOIN_FRAMES.map((key) => ({ key })),
+        frameRate: 10,
         repeat: -1,
       });
     }

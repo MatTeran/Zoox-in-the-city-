@@ -38,7 +38,7 @@ python3 scripts/art/generate_pixel_assets.py
 ## Gameplay
 
 - 3-lane endless runner through rainy neon SF
-- Pick up riders (+300, streak multiplier)
+- Collect Z coins (+300, streak multiplier)
 - Near-miss bonus · traffic costs a life
 - Progressive speed · local high score
 
@@ -46,7 +46,7 @@ python3 scripts/art/generate_pixel_assets.py
 
 ```text
 src/scenes|objects|systems|ui
-public/assets/{backgrounds,skyline,roads,zoox,traffic,riders,effects,ui,audio}
+public/assets/{backgrounds,skyline,roads,zoox,traffic,coins,effects,ui,audio}
 expo-app/   Expo WebView demo
 scripts/art/generate_pixel_assets.py
 ```

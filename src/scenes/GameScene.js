@@ -36,7 +36,7 @@ export class GameScene extends Phaser.Scene {
     this.player = new Zoox(this, 1);
 
     this.trafficGroup = this.physics.add.group({ runChildUpdate: true });
-    this.riderGroup = this.physics.add.group({ runChildUpdate: true });
+    this.coinGroup = this.physics.add.group({ runChildUpdate: true });
 
     this.scoreSystem = new ScoreSystem();
     this.hud = new Hud(this);
@@ -59,7 +59,7 @@ export class GameScene extends Phaser.Scene {
 
     this.spawnSystem = new SpawnSystem(this, {
       trafficGroup: this.trafficGroup,
-      riderGroup: this.riderGroup,
+      coinGroup: this.coinGroup,
       getPlayerLane: () => this.player?.laneIndex ?? 1,
     });
     this.spawnSystem.start();
@@ -68,8 +68,8 @@ export class GameScene extends Phaser.Scene {
       this.handleTrafficHit(car);
     });
 
-    this.physics.add.overlap(this.player, this.riderGroup, (_p, pickup) => {
-      this.handleRiderPickup(pickup);
+    this.physics.add.overlap(this.player, this.coinGroup, (_p, coin) => {
+      this.handleZCoinPickup(coin);
     });
 
     this.hud.refresh(this.scoreSystem.getSnapshot());
@@ -192,8 +192,8 @@ export class GameScene extends Phaser.Scene {
     this.scoreSystem.addPassive(delta);
     this.spawnSystem.update(delta, this.scrollSpeed);
 
-    this.riderGroup.getChildren().forEach((r) => {
-      if (r.active && r.body) r.setVelocityX(-this.scrollSpeed * 0.92);
+    this.coinGroup.getChildren().forEach((c) => {
+      if (c.active && c.body) c.setVelocityX(-this.scrollSpeed * 0.92);
     });
 
     this.cleanupEntities();
@@ -237,8 +237,8 @@ export class GameScene extends Phaser.Scene {
     this.trafficGroup.getChildren().forEach((car) => {
       if (car.isOffscreen) car.destroy();
     });
-    this.riderGroup.getChildren().forEach((r) => {
-      if (r.isOffscreen) r.destroy();
+    this.coinGroup.getChildren().forEach((c) => {
+      if (c.isOffscreen) c.destroy();
     });
   }
 
@@ -254,17 +254,18 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  handleRiderPickup(pickup) {
-    if (!pickup?.active || pickup.collected) return;
-    if (pickup.laneIndex !== this.player.laneIndex) return;
-    if (!pickup.collect()) return;
+  handleZCoinPickup(coin) {
+    if (!coin?.active || coin.collected) return;
+    if (coin.laneIndex !== this.player.laneIndex) return;
+    if (!coin.collect()) return;
 
-    const gained = this.scoreSystem.collectRider();
-    this.floatText(pickup.x, pickup.y - 60, `+${gained}`, '#ffd84d');
+    const gained = this.scoreSystem.collectZCoin();
+    this.floatText(coin.x, coin.y - 40, `Z +${gained}`, '#ffd84d');
 
-    const burst = this.add.image(pickup.x, pickup.y - 40, ASSET_KEYS.NEON_BURST)
+    const burst = this.add.image(coin.x, coin.y, ASSET_KEYS.NEON_BURST)
       .setDepth(50)
       .setScale(0.9)
+      .setTint(0xffd84d)
       .setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({
       targets: burst,
@@ -274,7 +275,7 @@ export class GameScene extends Phaser.Scene {
       onComplete: () => burst.destroy(),
     });
 
-    this.cameras.main.flash(70, 0, 240, 255);
+    this.cameras.main.flash(70, 255, 210, 80);
   }
 
   handleTrafficHit(car) {
@@ -307,7 +308,7 @@ export class GameScene extends Phaser.Scene {
         this.scoreSystem.persistHighScore();
         this.scene.start('GameOverScene', {
           score: snap.score,
-          riders: snap.riders,
+          zCoins: snap.zCoins,
           time: snap.time,
         });
       });

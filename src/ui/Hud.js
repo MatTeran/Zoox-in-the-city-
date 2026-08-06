@@ -3,7 +3,7 @@ import { ASSET_KEYS, COLORS, STARTING_LIVES } from '../config.js';
 
 /**
  * Reference-style arcade HUD:
- * solid top bezel bar + SCORE / RIDERS / LIVES / TIME / STREAK + bottom-right minimap.
+ * solid top bezel bar + SCORE / Z COINS / LIVES / TIME / STREAK + bottom-right minimap.
  */
 export class Hud {
   /** @param {Phaser.Scene} scene */
@@ -28,9 +28,18 @@ export class Hud {
 
     this.levelText = scene.add.text(24, 16, 'LEVEL 1', style).setDepth(901).setScrollFactor(0);
     this.scoreText = scene.add.text(180, 16, 'SCORE 000000', style).setDepth(901).setScrollFactor(0);
-    this.ridersText = scene.add.text(420, 16, 'RIDERS 0', style).setDepth(901).setScrollFactor(0);
-    this.timeText = scene.add.text(600, 16, 'TIME 0:00', style).setDepth(901).setScrollFactor(0);
-    this.streakText = scene.add.text(780, 16, 'STREAK 0', {
+
+    this.coinIcon = scene.add.image(408, 26, ASSET_KEYS.ZCOIN_HUD)
+      .setDepth(901)
+      .setDisplaySize(22, 22)
+      .setScrollFactor(0);
+    this.coinsText = scene.add.text(424, 16, 'Z COINS 0', {
+      ...style,
+      color: '#ffd84d',
+    }).setDepth(901).setScrollFactor(0);
+
+    this.timeText = scene.add.text(620, 16, 'TIME 0:00', style).setDepth(901).setScrollFactor(0);
+    this.streakText = scene.add.text(790, 16, 'STREAK 0', {
       ...style,
       color: '#ffd84d',
     }).setDepth(901).setScrollFactor(0);
@@ -64,14 +73,14 @@ export class Hud {
   }
 
   /**
-   * @param {{ score: number, riders: number, lives: number, streak: number, time: string }} snap
+   * @param {{ score: number, zCoins: number, lives: number, streak: number, time: string }} snap
    */
   refresh(snap) {
     // Level ramps loosely with score for arcade flavor
     const level = Math.max(1, Math.floor(snap.score / 2500) + 1);
     this.levelText.setText(`LEVEL ${level}`);
     this.scoreText.setText(`SCORE ${String(snap.score).padStart(6, '0')}`);
-    this.ridersText.setText(`RIDERS ${snap.riders}`);
+    this.coinsText.setText(`Z COINS ${snap.zCoins}`);
     this.timeText.setText(`TIME ${snap.time}`);
     this.streakText.setText(`STREAK ${snap.streak}`);
     this.hearts.forEach((heart, i) => heart.setVisible(i < snap.lives));

@@ -1,6 +1,6 @@
 # ZOOX FUTURE SF — Pixel Asset Pack
 
-All gameplay objects are **separate sprites**. Backgrounds never bake in the player, traffic, riders, or controls.
+All gameplay objects are **separate sprites**. Backgrounds never bake in the player, traffic, coins, or controls.
 
 ## Folders
 
@@ -11,7 +11,8 @@ All gameplay objects are **separate sprites**. Backgrounds never bake in the pla
 | `roads/` | 3-lane wet road + reflection overlay |
 | `zoox/` | Player robotaxi frames |
 | `traffic/` | Sedan, SUV, van, taxi, EV, bus, truck |
-| `riders/` | Rider variants + neon kiosk |
+| `coins/` | Gold Z-coin collectible + spin frames + HUD icon |
+| `riders/` | Legacy rider/kiosk art (unused) |
 | `effects/` | Rain, sparks, burst, headlight cone, fragments |
 | `ui/` | HUD panels, hearts, buttons, radar, menu backdrop |
 | `audio/` | Reserved for SFX / music |
@@ -37,3 +38,7 @@ python3 scripts/art/generate_pixel_assets.py
 ```
 
 Replace any PNG in-place — BootScene keys stay stable.
+
+```bash
+python3 scripts/art/make_zcoin.py
+```

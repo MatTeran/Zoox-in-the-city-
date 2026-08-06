@@ -12,7 +12,7 @@ export class GameOverScene extends Phaser.Scene {
 
   init(data = {}) {
     this.finalScore = data.score ?? 0;
-    this.riders = data.riders ?? 0;
+    this.zCoins = data.zCoins ?? 0;
     this.timeLabel = data.time ?? '0:00';
   }
 
@@ -42,7 +42,7 @@ export class GameOverScene extends Phaser.Scene {
       color: '#00f0ff',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.48, `RIDERS ${this.riders}   TIME ${this.timeLabel}`, {
+    this.add.text(width / 2, height * 0.48, `Z COINS ${this.zCoins}   TIME ${this.timeLabel}`, {
       fontFamily: '"Courier New", monospace',
       fontSize: '20px',
       color: '#ffd84d',

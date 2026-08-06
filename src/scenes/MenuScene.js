@@ -127,7 +127,7 @@ export class MenuScene extends Phaser.Scene {
     this.showPanel('HIGH SCORES', [
       `LOCAL BEST  ${high}`,
       'Clear browser storage to reset.',
-      'Survive longer. Stack rider streaks.',
+      'Survive longer. Stack Z-coin streaks.',
     ], '#ff2bd6');
   }
 
@@ -144,7 +144,7 @@ export class MenuScene extends Phaser.Scene {
     this.showPanel('HOW TO PLAY', [
       'Drive the Zoox through neon SF',
       'UP / DOWN or W / S to change lanes',
-      'Pick up riders for +300 and streaks',
+      'Collect Z coins for +300 and streaks',
       'Dodge traffic — 3 lives',
       'Near misses earn bonus points',
     ], '#40ffa0');

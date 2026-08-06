@@ -6,7 +6,7 @@ import { SCORE, STARTING_LIVES } from '../config.js';
 export class ScoreSystem {
   constructor() {
     this.score = 0;
-    this.riders = 0;
+    this.zCoins = 0;
     this.lives = STARTING_LIVES;
     this.streak = 0;
     this.multiplier = 1;
@@ -19,11 +19,11 @@ export class ScoreSystem {
     this.score += (SCORE.PASSIVE_PER_SECOND * deltaMs) / 1000;
   }
 
-  collectRider() {
-    this.riders += 1;
+  collectZCoin() {
+    this.zCoins += 1;
     this.streak += 1;
     this.multiplier = 1 + Math.max(0, this.streak - 1) * SCORE.STREAK_MULTIPLIER_STEP;
-    const gained = Math.round(SCORE.RIDER_BONUS * this.multiplier);
+    const gained = Math.round(SCORE.ZCOIN_BONUS * this.multiplier);
     this.score += gained;
     this.persistHighScore();
     return gained;
@@ -53,7 +53,7 @@ export class ScoreSystem {
   getSnapshot() {
     return {
       score: Math.floor(this.score),
-      riders: this.riders,
+      zCoins: this.zCoins,
       lives: this.lives,
       streak: this.streak,
       multiplier: this.multiplier,

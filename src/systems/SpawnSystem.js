@@ -1,24 +1,24 @@
 import Phaser from 'phaser';
 import { ASSET_KEYS, LANE_COUNT, SPAWN, SPEED } from '../config.js';
 import { TrafficCar } from '../objects/TrafficCar.js';
-import { RiderPickup } from '../objects/RiderPickup.js';
+import { ZCoinPickup } from '../objects/ZCoinPickup.js';
 
 /**
- * Fairer spawn curves: fewer stacked lane traps, more riders early.
+ * Fairer spawn curves: fewer stacked lane traps, more Z coins early.
  */
 export class SpawnSystem {
   /**
    * @param {Phaser.Scene} scene
-   * @param {{ trafficGroup: Phaser.Physics.Arcade.Group, riderGroup: Phaser.Physics.Arcade.Group, getPlayerLane?: Function }} groups
+   * @param {{ trafficGroup: Phaser.Physics.Arcade.Group, coinGroup: Phaser.Physics.Arcade.Group, getPlayerLane?: Function }} groups
    */
   constructor(scene, groups) {
     this.scene = scene;
     this.trafficGroup = groups.trafficGroup;
-    this.riderGroup = groups.riderGroup;
+    this.coinGroup = groups.coinGroup;
     this.getPlayerLane = groups.getPlayerLane || (() => 1);
     this.enabled = false;
     this.trafficTimer = 0;
-    this.riderTimer = 0;
+    this.coinTimer = 0;
     this.elapsed = 0;
     this.lastTrafficLane = 1;
     this.recentTrafficLanes = [];
@@ -28,7 +28,7 @@ export class SpawnSystem {
     this.enabled = true;
     this.elapsed = 0;
     this.trafficTimer = 900;
-    this.riderTimer = 700;
+    this.coinTimer = 700;
     this.recentTrafficLanes = [];
   }
 
@@ -45,16 +45,16 @@ export class SpawnSystem {
 
     this.elapsed += deltaMs;
     this.trafficTimer -= deltaMs;
-    this.riderTimer -= deltaMs;
+    this.coinTimer -= deltaMs;
 
     const t = this.elapsed / 1000;
     const trafficEvery = Math.max(
       SPAWN.TRAFFIC_MIN_MS,
       SPAWN.TRAFFIC_START_MS - t * 18,
     );
-    const riderEvery = Math.max(
-      SPAWN.RIDER_MIN_MS,
-      SPAWN.RIDER_START_MS - t * 14,
+    const coinEvery = Math.max(
+      SPAWN.ZCOIN_MIN_MS,
+      SPAWN.ZCOIN_START_MS - t * 14,
     );
 
     if (this.trafficTimer <= 0) {
@@ -62,9 +62,9 @@ export class SpawnSystem {
       this.trafficTimer = trafficEvery;
     }
 
-    if (this.riderTimer <= 0) {
-      this.spawnRider(scrollSpeed);
-      this.riderTimer = riderEvery;
+    if (this.coinTimer <= 0) {
+      this.spawnZCoin(scrollSpeed);
+      this.coinTimer = coinEvery;
     }
   }
 
@@ -116,9 +116,9 @@ export class SpawnSystem {
   }
 
   /** @param {number} scrollSpeed */
-  spawnRider(scrollSpeed) {
+  spawnZCoin(scrollSpeed) {
     const playerLane = this.getPlayerLane();
-    // Often put a rider in/near the player lane so pickups feel rewarding.
+    // Often put a coin in/near the player lane so collecting feels rewarding.
     let lane = playerLane;
     if (Math.random() < 0.45) {
       lane = Phaser.Math.Clamp(playerLane + Phaser.Math.Between(-1, 1), 0, LANE_COUNT - 1);
@@ -127,8 +127,8 @@ export class SpawnSystem {
       lane = (lane + 1) % LANE_COUNT;
     }
 
-    const pickup = new RiderPickup(this.scene, this.scene.scale.width + 70, lane);
-    pickup.scroll(scrollSpeed);
-    this.riderGroup.add(pickup);
+    const coin = new ZCoinPickup(this.scene, this.scene.scale.width + 70, lane);
+    coin.scroll(scrollSpeed);
+    this.coinGroup.add(coin);
   }
 }
