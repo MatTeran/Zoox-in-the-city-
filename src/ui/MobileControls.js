@@ -1,8 +1,9 @@
-import { ASSET_KEYS } from '../config.js';
+import Phaser from 'phaser';
+import { COLORS } from '../config.js';
 
 /**
- * Large thumb-friendly lane controls.
- * Uses oversized hit Zones + pointerdown so taps always register on mobile/WebView.
+ * Modern glass lane pad — soft shell, thin chevrons, quiet neon accents.
+ * Built to feel like a Zoox cabin control, not a stock arcade sticker.
  */
 export class MobileControls {
   /**
@@ -13,73 +14,211 @@ export class MobileControls {
     this.scene = scene;
     this.handlers = handlers;
     const { width, height } = scene.scale;
-
-    // Keep UI above world / particles / radar.
     const DEPTH = 1000;
 
-    this.up = this.makeLaneButton(120, height - 168, 'UP', handlers.onLaneUp, DEPTH);
-    this.down = this.makeLaneButton(120, height - 72, 'DOWN', handlers.onLaneDown, DEPTH);
-    this.pause = this.makeLaneButton(width - 100, 78, 'PAUSE', handlers.onPause, DEPTH, 0xff2bd6);
+    const cx = 92;
+    const cy = height - 118;
 
-    // Ensure UI receives input even when overlapping other objects.
+    this.shell = this.drawShell(cx, cy, DEPTH);
+
+    this.up = this.makeChevronButton({
+      x: cx,
+      y: cy - 48,
+      depth: DEPTH,
+      direction: 'up',
+      onPress: handlers.onLaneUp,
+    });
+
+    this.down = this.makeChevronButton({
+      x: cx,
+      y: cy + 48,
+      depth: DEPTH,
+      direction: 'down',
+      onPress: handlers.onLaneDown,
+    });
+
+    this.pause = this.makePauseButton({
+      x: width - 50,
+      y: 76,
+      depth: DEPTH,
+      onPress: handlers.onPause,
+    });
+
     scene.input.setTopOnly(true);
   }
 
   /**
+   * Soft frosted shell behind the two lane keys.
    * @param {number} x
    * @param {number} y
-   * @param {string} label
-   * @param {Function} onPress
    * @param {number} depth
-   * @param {number} [tint]
    */
-  makeLaneButton(x, y, label, onPress, depth, tint) {
-    const hitW = 160;
-    const hitH = 88;
+  drawShell(x, y, depth) {
+    const g = this.scene.add.graphics().setScrollFactor(0).setDepth(depth - 1);
+    const w = 88;
+    const h = 188;
+    const r = 28;
 
-    // Invisible generous hit target (most important for phones).
-    const zone = this.scene.add.zone(x, y, hitW, hitH)
-      .setScrollFactor(0)
-      .setDepth(depth + 2)
-      .setInteractive({ useHandCursor: true });
+    g.fillStyle(0x02060f, 0.45);
+    g.fillRoundedRect(x - w / 2, y - h / 2, w, h, r);
 
-    const img = this.scene.add.image(x, y, ASSET_KEYS.BUTTON)
-      .setDisplaySize(140, 72)
-      .setScrollFactor(0)
-      .setDepth(depth)
-      .setAlpha(0.92);
-    if (tint) img.setTint(tint);
+    // Inner glass sheen
+    g.fillStyle(0xffffff, 0.04);
+    g.fillRoundedRect(x - w / 2 + 3, y - h / 2 + 3, w - 6, h * 0.38, r - 4);
 
-    const text = this.scene.add.text(x, y, label, {
-      fontFamily: '"Courier New", monospace',
-      fontSize: '26px',
-      color: '#050816',
-      fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(depth + 1).setScrollFactor(0);
+    g.lineStyle(1.5, COLORS.ELECTRIC_CYAN, 0.35);
+    g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, r);
 
-    const press = () => {
-      img.setAlpha(0.5);
-      onPress?.();
-      this.scene.time.delayedCall(90, () => {
-        if (img.active) img.setAlpha(0.92);
-      });
+    // Quiet center rule
+    g.lineStyle(1, 0xffffff, 0.1);
+    g.lineBetween(x - 18, y, x + 18, y);
+
+    return g;
+  }
+
+  /**
+   * Circular glass key with thin-line double chevron.
+   * @param {{ x: number, y: number, depth: number, direction: 'up'|'down', onPress: Function }} opts
+   */
+  makeChevronButton(opts) {
+    const { x, y, depth, direction, onPress } = opts;
+    const radius = 32;
+
+    const face = this.scene.add.graphics();
+    const icon = this.scene.add.graphics();
+
+    const paint = (pressed = false) => {
+      face.clear();
+      icon.clear();
+
+      face.fillStyle(COLORS.ELECTRIC_CYAN, pressed ? 0.2 : 0.05);
+      face.fillCircle(0, 0, radius + 6);
+
+      face.fillStyle(0x0a1524, pressed ? 0.92 : 0.55);
+      face.fillCircle(0, 0, radius);
+      face.lineStyle(1.75, pressed ? 0xb8f7ff : 0x6ae7ff, pressed ? 0.95 : 0.55);
+      face.strokeCircle(0, 0, radius);
+
+      // Specular rim
+      face.lineStyle(1.25, 0xffffff, pressed ? 0.35 : 0.16);
+      face.beginPath();
+      face.arc(0, -1, radius - 5, Phaser.Math.DegToRad(210), Phaser.Math.DegToRad(330), false);
+      face.strokePath();
+
+      this.drawChevrons(icon, direction, pressed);
     };
 
-    // pointerdown is reliable on iOS Safari / Expo WebView; pointerup often misses.
+    paint(false);
+
+    const root = this.scene.add.container(x, y, [face, icon])
+      .setScrollFactor(0)
+      .setDepth(depth);
+
+    const hitR = radius + 14;
+    const zone = this.scene.add.zone(x, y, hitR * 2, hitR * 2)
+      .setScrollFactor(0)
+      .setDepth(depth + 2)
+      .setInteractive({
+        hitArea: new Phaser.Geom.Circle(0, 0, hitR),
+        hitAreaCallback: Phaser.Geom.Circle.Contains,
+        useHandCursor: true,
+      });
+
+    let busy = false;
     zone.on('pointerdown', (pointer) => {
       pointer?.event?.preventDefault?.();
-      press();
+      if (busy) return;
+      busy = true;
+      paint(true);
+      this.scene.tweens.add({
+        targets: root,
+        scale: 0.9,
+        duration: 55,
+        yoyo: true,
+        onComplete: () => {
+          paint(false);
+          busy = false;
+        },
+      });
+      onPress?.();
     });
 
-    // Soft idle pulse so controls read as tappable.
-    this.scene.tweens.add({
-      targets: img,
-      alpha: { from: 0.85, to: 1 },
-      duration: 700,
-      yoyo: true,
-      repeat: -1,
+    return { zone, root, paint };
+  }
+
+  /**
+   * Thin double-chevron (modern, not chunky filled triangle).
+   * @param {Phaser.GameObjects.Graphics} g
+   * @param {'up'|'down'} direction
+   * @param {boolean} pressed
+   */
+  drawChevrons(g, direction, pressed) {
+    const dir = direction === 'up' ? -1 : 1;
+    const color = pressed ? 0xffffff : 0xe7fbff;
+    const alpha = pressed ? 1 : 0.92;
+    const thickness = 3.2;
+    const width = 15;
+    const offsets = [-5, 5];
+
+    offsets.forEach((oy) => {
+      const y = oy * dir;
+      g.lineStyle(thickness, color, alpha);
+      g.beginPath();
+      g.moveTo(-width, y - dir * 5);
+      g.lineTo(0, y + dir * 7);
+      g.lineTo(width, y - dir * 5);
+      g.strokePath();
+    });
+  }
+
+  /**
+   * Minimal pause chip.
+   * @param {{ x: number, y: number, depth: number, onPress: Function }} opts
+   */
+  makePauseButton(opts) {
+    const { x, y, depth, onPress } = opts;
+    const r = 18;
+    const g = this.scene.add.graphics();
+
+    const paint = (pressed = false) => {
+      g.clear();
+      g.fillStyle(0x02060f, pressed ? 0.75 : 0.42);
+      g.fillCircle(0, 0, r);
+      g.lineStyle(1.5, pressed ? COLORS.NEON_MAGENTA : COLORS.ELECTRIC_CYAN, pressed ? 0.9 : 0.45);
+      g.strokeCircle(0, 0, r);
+      g.fillStyle(0xf2fcff, 0.95);
+      g.fillRoundedRect(-6.5, -7, 4, 14, 1.5);
+      g.fillRoundedRect(2.5, -7, 4, 14, 1.5);
+    };
+
+    paint(false);
+
+    const root = this.scene.add.container(x, y, [g])
+      .setScrollFactor(0)
+      .setDepth(depth);
+
+    const zone = this.scene.add.zone(x, y, 48, 48)
+      .setScrollFactor(0)
+      .setDepth(depth + 2)
+      .setInteractive({
+        hitArea: new Phaser.Geom.Circle(0, 0, 24),
+        hitAreaCallback: Phaser.Geom.Circle.Contains,
+        useHandCursor: true,
+      });
+
+    zone.on('pointerdown', (pointer) => {
+      pointer?.event?.preventDefault?.();
+      paint(true);
+      this.scene.tweens.add({
+        targets: root,
+        scale: 0.9,
+        duration: 55,
+        yoyo: true,
+        onComplete: () => paint(false),
+      });
+      onPress?.();
     });
 
-    return { zone, img, text };
+    return { zone, root, paint };
   }
 }

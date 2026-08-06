@@ -75,7 +75,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.refresh(this.scoreSystem.getSnapshot());
 
     // Brief tip so players know controls work.
-    const tip = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 28, 'TAP UP / DOWN  ·  SWIPE  ·  W/S', {
+    const tip = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 28, 'LANE PAD  ·  SWIPE  ·  W/S', {
       fontFamily: '"Courier New", monospace',
       fontSize: '16px',
       color: '#9bb4d8',
