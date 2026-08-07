@@ -147,6 +147,7 @@ export class MenuScene extends Phaser.Scene {
       'Collect Z coins for +300 and streaks',
       'Dodge traffic — 3 lives',
       'Near misses earn bonus points',
+      'Hit 5000 score to reach Las Vegas',
     ], '#40ffa0');
   }
 

@@ -6,9 +6,9 @@ All gameplay objects are **separate sprites**. Backgrounds never bake in the pla
 
 | Folder | Contents |
 |---|---|
-| `backgrounds/` | Night sky, clouds |
+| `backgrounds/` | Night sky, clouds, static `city_sf` / `city_vegas` plates |
 | `skyline/` | Distant SF landmarks + neon midground districts |
-| `roads/` | 3-lane wet road + reflection overlay |
+| `roads/` | 3-lane wet road, reflections, seamless `road_scroll` band |
 | `zoox/` | Player robotaxi frames |
 | `traffic/` | Sedan, SUV, van, taxi, EV, bus, truck |
 | `coins/` | Gold Z-coin collectible + spin frames + HUD icon |
@@ -41,4 +41,5 @@ Replace any PNG in-place — BootScene keys stay stable.
 
 ```bash
 python3 scripts/art/make_zcoin.py
+python3 scripts/art/make_city_worlds.py
 ```

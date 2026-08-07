@@ -38,7 +38,9 @@ python3 scripts/art/generate_pixel_assets.py
 ## Gameplay
 
 - 3-lane endless runner through rainy neon SF
+- Static skyline + scrolling road (highway drive feel)
 - Collect Z coins (+300, streak multiplier)
+- At 5000 score the skyline crossfades to Las Vegas
 - Near-miss bonus · traffic costs a life
 - Progressive speed · local high score
 

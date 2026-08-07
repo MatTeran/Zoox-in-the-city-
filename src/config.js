@@ -25,7 +25,12 @@ export const SCORE = {
   NEAR_MISS_BONUS: 75,
   STREAK_MULTIPLIER_STEP: 0.25,
   HIGH_SCORE_KEY: 'zoox_future_sf_high_score',
+  /** Crossfade the static skyline from SF → Las Vegas at this score. */
+  VEGAS_UNLOCK: 5000,
 };
+
+/** Y where the scrolling road band begins (city plate stays static above). */
+export const ROAD_TOP = 465;
 
 export const SPEED = {
   BASE_SCROLL: 180,
@@ -71,7 +76,10 @@ export const ASSET_KEYS = {
   MIDGROUND: 'midground',
   ROAD: 'road',
   ROAD_REFLECT: 'road_reflect',
+  ROAD_SCROLL: 'road_scroll',
   GAME_WORLD: 'game_world',
+  CITY_SF: 'city_sf',
+  CITY_VEGAS: 'city_vegas',
   ZOOX: 'zoox',
   ZOOX_1: 'zoox_1',
   HEADLIGHT: 'headlight_cone',
@@ -97,6 +105,9 @@ export const ASSET_KEYS = {
 export const PAINTED_ASSET_KEYS = [
   ASSET_KEYS.MENU_BG,
   ASSET_KEYS.GAME_WORLD,
+  ASSET_KEYS.CITY_SF,
+  ASSET_KEYS.CITY_VEGAS,
+  ASSET_KEYS.ROAD_SCROLL,
   ASSET_KEYS.ZOOX,
   ASSET_KEYS.ZOOX_1,
   ASSET_KEYS.ZCOIN,

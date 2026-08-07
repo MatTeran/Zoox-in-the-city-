@@ -4,6 +4,8 @@ import {
   COLORS,
   GAME_HEIGHT,
   GAME_WIDTH,
+  ROAD_TOP,
+  SCORE,
   SPEED,
 } from '../config.js';
 import { Zoox } from '../objects/Zoox.js';
@@ -25,6 +27,8 @@ export class GameScene extends Phaser.Scene {
     this.isPaused = false;
     this.scrollSpeed = SPEED.BASE_SCROLL;
     this.gameOverPending = false;
+    this.cityId = 'sf';
+    this.cityTransitioning = false;
 
     this.createWorld();
     this.createRain();
@@ -92,17 +96,36 @@ export class GameScene extends Phaser.Scene {
   }
 
   createWorld() {
-    // Painted neon SF plate — same art language as the start menu.
-    this.world = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, ASSET_KEYS.GAME_WORLD)
+    // Static city plates — skyline does not scroll.
+    this.citySf = this.add.image(0, 0, ASSET_KEYS.CITY_SF)
       .setOrigin(0, 0)
+      .setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
       .setDepth(0);
 
-    // Keep legacy layers as null-safe stubs for update() scroll math.
-    this.clouds = this.world;
-    this.skyline = this.world;
-    this.midground = this.world;
-    this.road = this.world;
-    this.roadReflect = this.world;
+    this.cityVegas = this.add.image(0, 0, ASSET_KEYS.CITY_VEGAS)
+      .setOrigin(0, 0)
+      .setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
+      .setDepth(0)
+      .setAlpha(0);
+
+    // Only the road band scrolls — long-highway driving feel.
+    const roadH = GAME_HEIGHT - ROAD_TOP;
+    this.road = this.add.tileSprite(0, ROAD_TOP, GAME_WIDTH, roadH, ASSET_KEYS.ROAD_SCROLL)
+      .setOrigin(0, 0)
+      .setDepth(2);
+
+    // Soft wet sheen that also scrolls with the asphalt.
+    this.roadReflect = this.add.tileSprite(0, ROAD_TOP, GAME_WIDTH, roadH, ASSET_KEYS.ROAD_REFLECT)
+      .setOrigin(0, 0)
+      .setDepth(3)
+      .setAlpha(0.28)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
+    // Alias kept for any legacy references.
+    this.world = this.citySf;
+    this.clouds = this.citySf;
+    this.skyline = this.citySf;
+    this.midground = this.citySf;
 
     // Soft lane readability without covering the painted wet road.
     this.laneGuides = this.add.graphics().setDepth(9);
@@ -145,11 +168,14 @@ export class GameScene extends Phaser.Scene {
   drawNeonWash(t) {
     this.neonWash.clear();
     const pulse = 0.5 + Math.sin(t / 400) * 0.5;
-    this.neonWash.fillStyle(COLORS.WARM_YELLOW, 0.05 + pulse * 0.03);
+    const vegas = this.cityId === 'vegas';
+    const warm = vegas ? COLORS.ORANGE_LANDMARK : COLORS.WARM_YELLOW;
+    const cool = vegas ? COLORS.NEON_MAGENTA : COLORS.ELECTRIC_CYAN;
+    this.neonWash.fillStyle(warm, 0.05 + pulse * 0.03);
     this.neonWash.fillEllipse(180, 430, 160, 40);
     this.neonWash.fillEllipse(520, 430, 140, 36);
     this.neonWash.fillEllipse(900, 430, 160, 40);
-    this.neonWash.fillStyle(COLORS.ELECTRIC_CYAN, 0.05 + pulse * 0.03);
+    this.neonWash.fillStyle(cool, 0.05 + pulse * 0.03);
     this.neonWash.fillRect(0, 448, GAME_WIDTH, 24);
   }
 
@@ -182,8 +208,9 @@ export class GameScene extends Phaser.Scene {
 
     const d = delta / 16;
     const roadScroll = (this.scrollSpeed / 60) * d;
-    // Single painted strip scrolls as the whole world.
-    this.world.tilePositionX += roadScroll * 0.95;
+    // City stays put; only the asphalt rushes past.
+    this.road.tilePositionX += roadScroll * 1.15;
+    this.roadReflect.tilePositionX += roadScroll * 1.35;
 
     this.drawNeonWash(this.time.now);
     this.drawSpeedLines();
@@ -205,6 +232,64 @@ export class GameScene extends Phaser.Scene {
       this.player.laneIndex,
       this.trafficGroup.getChildren().filter((c) => c.active),
     );
+
+    if (
+      !this.cityTransitioning
+      && this.cityId === 'sf'
+      && snap.score >= SCORE.VEGAS_UNLOCK
+    ) {
+      this.enterLasVegas();
+    }
+  }
+
+  /** Crossfade the static skyline from San Francisco to Las Vegas. */
+  enterLasVegas() {
+    if (this.cityTransitioning || this.cityId === 'vegas') return;
+    this.cityTransitioning = true;
+    this.cityId = 'vegas';
+
+    this.cameras.main.flash(220, 255, 180, 60);
+    this.cameras.main.shake(180, 0.004);
+
+    const banner = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT * 0.38, 'NOW ENTERING\nLAS VEGAS', {
+      fontFamily: '"Courier New", monospace',
+      fontSize: '42px',
+      color: '#ffd84d',
+      align: 'center',
+      stroke: '#050816',
+      strokeThickness: 6,
+      backgroundColor: '#050816cc',
+      padding: { x: 18, y: 12 },
+    }).setOrigin(0.5).setDepth(950).setAlpha(0);
+
+    this.tweens.add({
+      targets: banner,
+      alpha: 1,
+      scale: { from: 0.92, to: 1 },
+      duration: 280,
+      yoyo: true,
+      hold: 1100,
+      onComplete: () => banner.destroy(),
+    });
+
+    this.tweens.add({
+      targets: this.citySf,
+      alpha: 0,
+      duration: 1400,
+      ease: 'Sine.easeInOut',
+    });
+    this.tweens.add({
+      targets: this.cityVegas,
+      alpha: 1,
+      duration: 1400,
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        this.cityTransitioning = false;
+      },
+    });
+
+    // Warmer splash tint once we're on the Strip.
+    this.splashes?.setParticleTint([0xffd84d, 0xff2bd6, 0xffffff]);
   }
 
   highlightPlayerLane() {

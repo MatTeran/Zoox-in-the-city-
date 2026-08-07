@@ -47,7 +47,10 @@ export class BootScene extends Phaser.Scene {
     this.load.image(ASSET_KEYS.MIDGROUND, 'assets/skyline/midground.png');
     this.load.image(ASSET_KEYS.ROAD, 'assets/roads/road.png');
     this.load.image(ASSET_KEYS.ROAD_REFLECT, 'assets/roads/reflections.png');
+    this.load.image(ASSET_KEYS.ROAD_SCROLL, 'assets/roads/road_scroll.png');
     this.load.image(ASSET_KEYS.GAME_WORLD, 'assets/backgrounds/game_world.png');
+    this.load.image(ASSET_KEYS.CITY_SF, 'assets/backgrounds/city_sf.png');
+    this.load.image(ASSET_KEYS.CITY_VEGAS, 'assets/backgrounds/city_vegas.png');
     this.load.image(ASSET_KEYS.MENU_BG, 'assets/ui/menu_bg.png');
 
     // Player
