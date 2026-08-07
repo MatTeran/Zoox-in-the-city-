@@ -42,4 +42,5 @@ Replace any PNG in-place — BootScene keys stay stable.
 ```bash
 python3 scripts/art/make_zcoin.py
 python3 scripts/art/make_city_worlds.py
+python3 scripts/art/make_vegas_neon.py   # dense neon Vegas Strip plate
 ```

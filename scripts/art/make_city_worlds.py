@@ -290,9 +290,12 @@ def main() -> None:
     sf.save(BG / "city_sf.png")
     print("wrote", BG / "city_sf.png")
 
-    vegas = make_vegas_city()
-    vegas.save(BG / "city_vegas.png")
-    print("wrote", BG / "city_vegas.png")
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from make_vegas_neon import main as paint_vegas
+
+    paint_vegas()  # richer neon Strip plate
 
 
 if __name__ == "__main__":
