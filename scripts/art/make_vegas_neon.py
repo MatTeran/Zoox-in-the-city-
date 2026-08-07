@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-Paint a neon Las Vegas Strip plate that matches the SF city_sf energy:
-dense landmarks, neon outlines, glow blooms, wet waterfront, same road band.
+Paint city_vegas.png to match the neon Strip reference mock:
+Strat → Welcome sign → Palazzo/Venetian → Bellagio fountains →
+Paris (Eiffel + balloon) → Flamingo → High Roller.
+Dense painted neon, wet reflections, SF-plate energy.
 """
 
 from __future__ import annotations
@@ -10,378 +12,414 @@ import math
 import random
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter, ImageEnhance, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageEnhance, ImageFont, ImageOps
 
 ROOT = Path(__file__).resolve().parents[2]
 BG = ROOT / "public" / "assets" / "backgrounds"
 ROADS = ROOT / "public" / "assets" / "roads"
 W, H = 1280, 720
 ROAD_TOP = 465
-GROUND = ROAD_TOP - 52
+GROUND = ROAD_TOP - 48
 
 
-def clamp(v, a=0, b=255):
-    return max(a, min(b, int(v)))
-
-
-def glow_layer(size, cx, cy, radius, color, strength=140):
+def glow(size, cx, cy, radius, color, strength=130):
     layer = Image.new("RGBA", size, (0, 0, 0, 0))
     px = layer.load()
     cr, cg, cb = color[:3]
-    r2 = radius * radius
+    r2 = float(radius * radius)
     for y in range(max(0, cy - radius), min(size[1], cy + radius + 1)):
         for x in range(max(0, cx - radius), min(size[0], cx + radius + 1)):
-            d2 = (x - cx) * (x - cx) + (y - cy) * (y - cy)
+            d2 = (x - cx) ** 2 + (y - cy) ** 2
             if d2 <= r2:
                 d = math.sqrt(d2)
-                a = int(strength * (1 - d / radius) ** 1.45)
+                a = int(strength * (1 - d / radius) ** 1.5)
                 if a > 2:
                     px[x, y] = (cr, cg, cb, a)
-    return layer.filter(ImageFilter.GaussianBlur(max(1, radius // 7)))
+    return layer.filter(ImageFilter.GaussianBlur(max(1, radius // 8)))
 
 
-def neon_rect(d, xy, fill, outline, width=2):
-    d.rectangle(xy, fill=fill, outline=outline, width=width)
-
-
-def windows(d, x, y, w, h, rng, cool=False):
-    for row in range(8, h - 10, 11):
-        for col in range(5, w - 6, 9):
-            if (row + col + x) % 13 == 0:
-                continue
-            if cool:
-                c = (120, 230, 255, 230) if (x + row) % 5 else (180, 240, 255, 200)
-            else:
-                c = (255, 220, 110, 230) if (x + row) % 7 else (255, 180, 80, 210)
-            if rng.random() < 0.12:
-                c = (255, 80, 200, 220)
-            d.rectangle([x + col, y + row, x + col + 4, y + row + 6], fill=c)
-
-
-def building(img, d, x, y, w, h, body, accent, rng, cool=False, roof_neon=True):
-    neon_rect(d, [x, y, x + w, y + h], body, accent, 2)
-    if roof_neon:
-        d.rectangle([x, y, x + w, y + 4], fill=accent)
-        # roof glow
-        g = glow_layer(img.size, x + w // 2, y + 2, max(18, w // 2), accent, 70)
-        img.alpha_composite(g)
-    windows(d, x, y, w, h, rng, cool=cool)
-    # side neon edge
-    d.line([(x, y), (x, y + h)], fill=accent, width=2)
-    d.line([(x + w, y), (x + w, y + h)], fill=(*accent[:3], 160), width=1)
-
-
-def neon_text(d, x, y, text, fill, glow_col=None, size=18):
+def font(size):
     try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size)
+        return ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size)
     except Exception:
-        font = ImageFont.load_default()
-    # fake glow via offsets
-    if glow_col:
-        for ox, oy in ((-1, 0), (1, 0), (0, -1), (0, 1), (-2, 0), (2, 0)):
-            d.text((x + ox, y + oy), text, font=font, fill=(*glow_col[:3], 90))
-    d.text((x, y), text, font=font, fill=fill)
-    return font
+        return ImageFont.load_default()
 
 
-def make_sky(img, d, rng):
-    # Match SF: deep indigo → magenta haze near horizon
-    for y in range(GROUND + 10):
+def neon_label(d, x, y, text, fill, size=14, glow_c=None):
+    f = font(size)
+    gc = glow_c or fill
+    for ox, oy in ((-1, 0), (1, 0), (0, -1), (0, 1), (-2, 0), (2, 0), (0, -2)):
+        d.text((x + ox, y + oy), text, font=f, fill=(*gc[:3], 70))
+    d.text((x, y), text, font=f, fill=fill if len(fill) == 4 else (*fill, 255))
+
+
+def windows(d, x, y, w, h, rng, warm=True):
+    for row in range(10, h - 8, 10):
+        for col in range(5, w - 5, 8):
+            if (row + col + x) % 11 == 0:
+                continue
+            if warm:
+                c = (255, 220, 120, 230) if (x + row) % 6 else (255, 190, 80, 200)
+            else:
+                c = (140, 230, 255, 230) if (x + row) % 5 else (90, 180, 255, 200)
+            if rng.random() < 0.08:
+                c = (255, 90, 200, 220)
+            d.rectangle([x + col, y + row, x + col + 3, y + row + 5], fill=c)
+
+
+def tower_block(img, d, x, y, w, h, body, accent, rng, warm=True, outline=True):
+    d.rectangle([x, y, x + w, y + h], fill=body)
+    if outline:
+        d.rectangle([x, y, x + w, y + h], outline=accent, width=2)
+    d.rectangle([x, y, x + w, y + 3], fill=accent)
+    windows(d, x, y, w, h, rng, warm=warm)
+    img.alpha_composite(glow(img.size, x + w // 2, y + 4, max(16, w // 2), accent, 55))
+
+
+def paint_sky(img, d, rng):
+    # Deep indigo → magenta haze (reference)
+    for y in range(GROUND + 8):
         t = y / max(1, GROUND)
-        r = int(12 + t * 55)
-        g = int(8 + t * 18)
-        b = int(40 + t * 70)
-        # magenta lift mid-sky
-        if 80 < y < 280:
-            r = min(255, r + 25)
-            b = min(255, b + 15)
+        r = int(10 + t * 70)
+        g = int(6 + t * 20)
+        b = int(36 + t * 75)
+        if 60 < y < 260:
+            r = min(255, r + 35)
+            b = min(255, b + 20)
         d.line([(0, y), (W, y)], fill=(r, g, b, 255))
 
-    # Nebula / cloud washes like SF
-    haze = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    hd = ImageDraw.Draw(haze)
-    for cx, cy, col, rad in (
-        (220, 120, (255, 60, 180), 120),
-        (640, 90, (160, 60, 255), 140),
-        (980, 130, (255, 80, 160), 110),
-        (400, 200, (80, 40, 160), 160),
+    # Wispy purple clouds
+    clouds = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    cd = ImageDraw.Draw(clouds)
+    for cx, cy, rw, rh, a in (
+        (180, 90, 160, 40, 40),
+        (420, 70, 200, 50, 35),
+        (720, 100, 180, 45, 38),
+        (980, 80, 160, 40, 32),
+        (300, 150, 220, 55, 28),
     ):
-        hd.ellipse([cx - rad, cy - rad // 2, cx + rad, cy + rad // 2], fill=(*col, 28))
-    haze = haze.filter(ImageFilter.GaussianBlur(28))
-    img.alpha_composite(haze)
+        cd.ellipse([cx - rw, cy - rh, cx + rw, cy + rh], fill=(180, 70, 200, a))
+    clouds = clouds.filter(ImageFilter.GaussianBlur(16))
+    img.alpha_composite(clouds)
 
-    for _ in range(320):
-        x, y = rng.randint(0, W - 1), rng.randint(0, 300)
+    for _ in range(280):
+        x, y = rng.randint(0, W - 1), rng.randint(0, 280)
         s = rng.choice([1, 1, 1, 2])
-        a = rng.randint(140, 255)
-        d.ellipse([x, y, x + s, y + s], fill=(255, 245, 230, a))
+        d.ellipse([x, y, x + s, y + s], fill=(255, 245, 230, rng.randint(140, 255)))
 
-    # Full moon with crater detail (SF energy)
-    mx, my, mr = 1120, 88, 48
-    img.alpha_composite(glow_layer(img.size, mx, my, 70, (255, 240, 210), 55))
-    d.ellipse([mx - mr, my - mr, mx + mr, my + mr], fill=(245, 240, 255, 255))
-    for cx, cy, r in ((mx - 12, my - 8, 8), (mx + 10, my + 6, 6), (mx - 4, my + 14, 5), (mx + 16, my - 14, 4)):
-        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(210, 205, 230, 255))
+    # Bright full moon (reference)
+    mx, my, mr = 1145, 78, 52
+    img.alpha_composite(glow(img.size, mx, my, 78, (255, 240, 220), 60))
+    d.ellipse([mx - mr, my - mr, mx + mr, my + mr], fill=(250, 245, 255, 255))
+    for cx, cy, r in ((mx - 14, my - 10, 9), (mx + 12, my + 8, 7), (mx - 2, my + 16, 5), (mx + 18, my - 16, 4)):
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(215, 210, 235, 255))
 
 
-def make_water(img, d, rng):
+def paint_waterfront(img, d, rng):
     for y in range(GROUND, ROAD_TOP):
         t = (y - GROUND) / max(1, ROAD_TOP - GROUND)
-        d.line([(0, y), (W, y)], fill=(int(8 + t * 12), int(10 + t * 16), int(28 + t * 20), 255))
+        d.line([(0, y), (W, y)], fill=(int(6 + t * 10), int(8 + t * 14), int(22 + t * 18), 255))
 
-    # Neon reflection streaks
+    # Soft neon puddle reflections under Strip
     refl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     rd = ImageDraw.Draw(refl)
-    for i in range(70):
-        x = 10 + i * 18
-        col = rng.choice([(255, 80, 180), (0, 240, 255), (255, 200, 60), (255, 120, 40), (180, 80, 255)])
-        rd.line([(x, GROUND + 2), (x + rng.randint(-4, 4), ROAD_TOP - 2)], fill=(*col, 85), width=2)
-    refl = refl.filter(ImageFilter.GaussianBlur(1.2))
+    for i in range(90):
+        x = 8 + i * 14
+        col = rng.choice([(255, 80, 180), (80, 200, 255), (255, 200, 70), (255, 120, 40), (160, 80, 255)])
+        rd.ellipse([x - 10, GROUND + 6, x + 10, ROAD_TOP - 4], fill=(*col, 40))
+    refl = refl.filter(ImageFilter.GaussianBlur(3))
     img.alpha_composite(refl)
 
-    # Curb neon
-    d.rectangle([0, ROAD_TOP - 4, W, ROAD_TOP], fill=(255, 200, 80, 200))
-    d.rectangle([0, GROUND - 2, W, GROUND + 1], fill=(0, 240, 255, 120))
+    d.rectangle([0, ROAD_TOP - 3, W, ROAD_TOP], fill=(255, 200, 90, 190))
+    d.rectangle([0, GROUND - 2, W, GROUND + 1], fill=(0, 230, 255, 100))
 
 
-def draw_welcome_sign(img, d):
-    sx, sy = 36, GROUND - 125
-    # pole
-    d.rectangle([sx + 30, sy + 95, sx + 42, GROUND], fill=(70, 70, 85, 255))
-    # outer neon rings
-    for r, col in ((48, (255, 60, 140)), (40, (0, 230, 255)), (32, (255, 60, 140))):
-        d.ellipse([sx + 36 - r, sy + 48 - r, sx + 36 + r, sy + 48 + r], outline=(*col, 255), width=3)
-        img.alpha_composite(glow_layer(img.size, sx + 36, sy + 48, r + 8, col, 45))
-    # diamond panel
+def draw_strat(img, d, rng):
+    # Far-left tall Stratosphere — red/white glowing top (reference)
+    x = 55
+    shaft_w = 28
+    # tapering shaft
+    for i in range(0, 240, 4):
+        t = i / 240
+        w = int(shaft_w * (1 - t * 0.35))
+        y = GROUND - i
+        col = (45, 30, 70, 255) if (i // 8) % 2 == 0 else (55, 35, 80, 255)
+        d.rectangle([x + (shaft_w - w) // 2, y - 4, x + (shaft_w - w) // 2 + w, y], fill=col)
+        if i % 16 == 0:
+            d.rectangle(
+                [x + (shaft_w - w) // 2, y - 2, x + (shaft_w - w) // 2 + w, y],
+                fill=(255, 80, 160, 120),
+            )
+    # observation pod — red/white
+    pod_y = GROUND - 255
+    d.ellipse([x - 14, pod_y, x + shaft_w + 14, pod_y + 40], fill=(80, 30, 50, 255), outline=(255, 70, 120, 255), width=2)
+    d.ellipse([x - 6, pod_y + 6, x + shaft_w + 6, pod_y + 28], fill=(255, 240, 245, 90))
+    # red ring bands
+    d.arc([x - 14, pod_y, x + shaft_w + 14, pod_y + 40], 200, 340, fill=(255, 60, 100, 255), width=3)
+    img.alpha_composite(glow(img.size, x + shaft_w // 2, pod_y + 16, 48, (255, 70, 120), 95))
+    # tip spire
     d.polygon(
-        [(sx + 36, sy + 10), (sx + 70, sy + 48), (sx + 36, sy + 86), (sx + 2, sy + 48)],
-        fill=(25, 8, 40, 255),
-        outline=(255, 220, 80, 255),
+        [(x + 10, pod_y), (x + shaft_w // 2, pod_y - 35), (x + shaft_w - 10, pod_y)],
+        fill=(255, 220, 220, 255),
     )
-    neon_text(d, sx + 10, sy + 30, "WELCOME", (255, 220, 80, 255), (255, 180, 40), 11)
-    neon_text(d, sx + 18, sy + 44, "TO", (255, 255, 255, 255), (255, 255, 255), 10)
-    neon_text(d, sx + 8, sy + 56, "LAS VEGAS", (255, 80, 160, 255), (255, 40, 120), 11)
+    img.alpha_composite(glow(img.size, x + shaft_w // 2, pod_y - 20, 22, (255, 200, 200), 70))
+
+
+def draw_welcome(img, d):
+    # Iconic diamond Welcome sign — left-center like reference
+    sx, sy = 130, GROUND - 130
+    # pole
+    d.rectangle([sx + 34, sy + 100, sx + 46, GROUND], fill=(90, 90, 100, 255))
+    # neon circle rings
+    for r, col, w in ((52, (255, 60, 100), 4), (44, (255, 220, 60), 3), (36, (255, 60, 100), 3)):
+        d.ellipse([sx + 40 - r, sy + 52 - r, sx + 40 + r, sy + 52 + r], outline=(*col, 255), width=w)
+    img.alpha_composite(glow(img.size, sx + 40, sy + 52, 58, (255, 80, 120), 55))
+    # diamond
+    diamond = [(sx + 40, sy + 8), (sx + 78, sy + 52), (sx + 40, sy + 96), (sx + 2, sy + 52)]
+    d.polygon(diamond, fill=(30, 10, 40, 255), outline=(255, 220, 70, 255))
+    neon_label(d, sx + 8, sy + 28, "WELCOME", (255, 230, 90, 255), 11, (255, 180, 40))
+    neon_label(d, sx + 22, sy + 42, "TO", (255, 255, 255, 255), 11)
+    neon_label(d, sx + 6, sy + 56, "FABULOUS", (255, 90, 140, 255), 10, (255, 40, 100))
+    neon_label(d, sx + 8, sy + 70, "LAS VEGAS", (255, 230, 90, 255), 10, (255, 180, 40))
     # star
-    star = [(sx + 36, sy - 8), (sx + 41, sy + 6), (sx + 56, sy + 6), (sx + 44, sy + 16),
-            (sx + 48, sy + 30), (sx + 36, sy + 20), (sx + 24, sy + 30), (sx + 28, sy + 16),
-            (sx + 16, sy + 6), (sx + 31, sy + 6)]
-    d.polygon(star, fill=(255, 220, 80, 255))
-    img.alpha_composite(glow_layer(img.size, sx + 36, sy + 10, 28, (255, 200, 60), 80))
+    star = [
+        (sx + 40, sy - 10), (sx + 45, sy + 4), (sx + 60, sy + 4), (sx + 48, sy + 14),
+        (sx + 52, sy + 28), (sx + 40, sy + 18), (sx + 28, sy + 28), (sx + 32, sy + 14),
+        (sx + 20, sy + 4), (sx + 35, sy + 4),
+    ]
+    d.polygon(star, fill=(255, 220, 70, 255))
+    img.alpha_composite(glow(img.size, sx + 40, sy + 8, 26, (255, 200, 60), 80))
 
 
-def draw_stratosphere(img, d, rng):
-    x = 150
-    # shaft
-    building(img, d, x, GROUND - 230, 34, 230, (40, 28, 70, 255), (255, 60, 170, 255), rng, cool=True)
-    # pod
-    d.ellipse([x - 10, GROUND - 255, x + 44, GROUND - 215], fill=(50, 30, 70, 255), outline=(255, 80, 180, 255), width=2)
-    d.ellipse([x - 2, GROUND - 248, x + 36, GROUND - 222], fill=(255, 60, 160, 60))
-    img.alpha_composite(glow_layer(img.size, x + 17, GROUND - 235, 40, (255, 60, 180), 90))
-    neon_text(d, x - 6, GROUND - 268, "STRAT", (255, 80, 180, 255), (255, 40, 140), 14)
+def draw_palazzo(img, d, rng):
+    # Large Venetian/Palazzo block cluster
+    x = 230
+    tower_block(img, d, x, GROUND - 175, 70, 175, (50, 35, 55, 255), (255, 200, 70, 255), rng, warm=True)
+    tower_block(img, d, x + 75, GROUND - 155, 90, 155, (42, 30, 58, 255), (255, 180, 60, 255), rng, warm=True)
+    tower_block(img, d, x + 170, GROUND - 165, 55, 165, (55, 38, 48, 255), (255, 220, 90, 255), rng, warm=True)
+    # vertical PALAZZO neon
+    d.rectangle([x + 78, GROUND - 150, x + 94, GROUND - 40], fill=(20, 10, 30, 255), outline=(255, 200, 70, 255), width=2)
+    neon_label(d, x + 80, GROUND - 145, "P\nA\nL\nA\nZ\nZ\nO", (255, 220, 90, 255), 11, (255, 160, 40))
+    img.alpha_composite(glow(img.size, x + 86, GROUND - 95, 28, (255, 200, 70), 70))
+    # arched facade detail
+    d.arc([x + 100, GROUND - 50, x + 150, GROUND + 10], 200, 340, fill=(255, 200, 80, 200), width=3)
 
 
 def draw_bellagio(img, d, rng):
-    x, w = 320, 170
-    building(img, d, x, GROUND - 135, w, 135, (48, 32, 55, 255), (255, 210, 80, 255), rng)
-    # fountain jets
-    for i in range(16):
-        fx = x + 15 + i * 9
-        h = 18 + (i % 4) * 6
-        d.line([(fx, GROUND), (fx, GROUND - h)], fill=(140, 230, 255, 200), width=2)
-        d.ellipse([fx - 3, GROUND - h - 4, fx + 3, GROUND - h + 2], fill=(180, 240, 255, 180))
-    img.alpha_composite(glow_layer(img.size, x + w // 2, GROUND - 20, 50, (120, 220, 255), 55))
-    neon_text(d, x + 30, GROUND - 150, "BELLAGIO", (255, 220, 90, 255), (255, 180, 40), 16)
+    # Curved grand hotel + fountain jets (reference centerpiece)
+    x, w = 470, 175
+    # curved top silhouette via stacked widths
+    for i, ww in enumerate([w - 20, w - 10, w, w, w - 8]):
+        y = GROUND - 145 + i * 8
+        d.rectangle([x + (w - ww) // 2, y, x + (w - ww) // 2 + ww, y + 10], fill=(48, 34, 58, 255))
+    d.rectangle([x, GROUND - 105, x + w, GROUND], fill=(48, 34, 58, 255), outline=(255, 210, 90, 255), width=2)
+    windows(d, x, GROUND - 145, w, 145, rng, warm=True)
+    d.rectangle([x, GROUND - 145, x + w, GROUND - 141], fill=(255, 210, 90, 255))
+    img.alpha_composite(glow(img.size, x + w // 2, GROUND - 140, 55, (255, 200, 80), 60))
+
+    # Fountain jets — bright blue-white columns like the reference
+    jets = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    jd = ImageDraw.Draw(jets)
+    for i in range(22):
+        fx = x + 12 + i * 7
+        h = 36 + int(30 * abs(math.sin(i / 2.4)))
+        jd.line([(fx, GROUND - 2), (fx, GROUND - h)], fill=(190, 250, 255, 245), width=4)
+        jd.ellipse([fx - 7, GROUND - h - 10, fx + 7, GROUND - h + 2], fill=(220, 255, 255, 220))
+        for k in range(-3, 4):
+            jd.line([(fx, GROUND - h), (fx + k * 5, GROUND - h - 14)], fill=(200, 250, 255, 180), width=2)
+    # lake glow under jets
+    jd.ellipse([x + 10, GROUND - 18, x + w - 10, GROUND + 6], fill=(120, 220, 255, 70))
+    jets = jets.filter(ImageFilter.GaussianBlur(0.8))
+    img.alpha_composite(jets)
+    img.alpha_composite(glow(img.size, x + w // 2, GROUND - 40, 90, (140, 240, 255), 95))
+    neon_label(d, x + 40, GROUND - 160, "BELLAGIO", (255, 230, 100, 255), 15, (255, 180, 50))
 
 
-def draw_caesars(img, d, rng):
-    x = 510
-    building(img, d, x, GROUND - 160, 80, 160, (60, 40, 28, 255), (255, 180, 60, 255), rng)
-    # columns
-    for i in range(5):
-        cx = x + 10 + i * 14
-        d.rectangle([cx, GROUND - 70, cx + 6, GROUND], fill=(220, 190, 140, 255))
-        d.ellipse([cx - 2, GROUND - 78, cx + 8, GROUND - 68], fill=(255, 210, 120, 255))
-    neon_text(d, x + 4, GROUND - 178, "CAESARS", (255, 200, 80, 255), (255, 150, 40), 14)
-
-
-def draw_eiffel(img, d):
-    # Paris LV Eiffel tower
-    bx = 620
-    top = GROUND - 210
-    d.polygon([(bx, GROUND), (bx + 28, top), (bx + 56, GROUND)], outline=(255, 200, 80, 255))
-    # lattice
-    for i in range(0, 10):
-        t = i / 10
+def draw_paris(img, d):
+    # Eiffel tower (gold) + hot air balloon "Paris"
+    bx = 680
+    top = GROUND - 200
+    # legs
+    d.line([(bx, GROUND), (bx + 30, top)], fill=(255, 200, 70, 255), width=3)
+    d.line([(bx + 70, GROUND), (bx + 40, top)], fill=(255, 200, 70, 255), width=3)
+    d.line([(bx + 8, GROUND - 40), (bx + 62, GROUND - 40)], fill=(255, 190, 60, 255), width=2)
+    d.line([(bx + 16, GROUND - 90), (bx + 54, GROUND - 90)], fill=(255, 190, 60, 255), width=2)
+    d.line([(bx + 22, GROUND - 140), (bx + 48, GROUND - 140)], fill=(255, 190, 60, 255), width=2)
+    # lattice cross
+    for i in range(0, 8):
+        t = i / 8
         y = int(GROUND - t * (GROUND - top))
-        half = int(28 * (1 - t))
-        d.line([(bx + 28 - half, y), (bx + 28 + half, y)], fill=(255, 180, 60, 200), width=1)
-    d.line([(bx + 28, top), (bx + 28, top - 18)], fill=(255, 220, 100, 255), width=2)
-    img.alpha_composite(glow_layer(img.size, bx + 28, top - 5, 36, (255, 200, 80), 75))
-    neon_text(d, bx - 4, top - 36, "PARIS", (255, 220, 100, 255), (255, 160, 40), 13)
+        half = int(35 * (1 - t))
+        d.line([(bx + 35 - half, y), (bx + 35 + half, y)], fill=(255, 180, 50, 160), width=1)
+    d.line([(bx + 35, top), (bx + 35, top - 22)], fill=(255, 230, 120, 255), width=2)
+    img.alpha_composite(glow(img.size, bx + 35, top, 40, (255, 200, 70), 80))
+
+    # Hot air balloon — blue/red Paris sign (reference)
+    ball_x, ball_y = 760, GROUND - 165
+    d.ellipse([ball_x, ball_y, ball_x + 70, ball_y + 78], fill=(40, 60, 140, 255), outline=(255, 70, 100, 255), width=3)
+    # stripes
+    for i in range(0, 70, 10):
+        d.arc([ball_x, ball_y, ball_x + 70, ball_y + 78], 200 + i, 210 + i, fill=(255, 70, 100, 200), width=2)
+    d.rectangle([ball_x + 22, ball_y + 30, ball_x + 48, ball_y + 48], fill=(20, 20, 50, 255))
+    neon_label(d, ball_x + 14, ball_y + 32, "PARIS", (255, 240, 240, 255), 11, (255, 80, 120))
+    # basket
+    d.rectangle([ball_x + 26, ball_y + 78, ball_x + 44, ball_y + 92], fill=(180, 120, 60, 255))
+    d.line([(ball_x + 18, ball_y + 70), (ball_x + 28, ball_y + 78)], fill=(200, 200, 200, 200), width=1)
+    d.line([(ball_x + 52, ball_y + 70), (ball_x + 42, ball_y + 78)], fill=(200, 200, 200, 200), width=1)
+    img.alpha_composite(glow(img.size, ball_x + 35, ball_y + 40, 45, (255, 70, 120), 70))
 
 
-def draw_luxor(img, d):
-    left, right, apex = 720, 900, 810
-    top = GROUND - 195
-    d.polygon([(left, GROUND), (apex, top), (right, GROUND)], fill=(25, 45, 65, 255), outline=(0, 240, 255, 255))
-    # face highlight
-    d.polygon([(apex - 30, GROUND - 40), (apex, top), (apex + 10, GROUND - 40)], fill=(0, 220, 255, 40))
-    # sky beam
-    beam = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    bd = ImageDraw.Draw(beam)
-    bd.polygon([(apex - 6, top), (apex + 6, top), (apex + 18, 20), (apex - 18, 20)], fill=(255, 240, 180, 55))
-    beam = beam.filter(ImageFilter.GaussianBlur(2))
-    img.alpha_composite(beam)
-    img.alpha_composite(glow_layer(img.size, apex, top, 50, (0, 240, 255), 90))
-    neon_text(d, apex - 28, top - 28, "LUXOR", (0, 245, 255, 255), (0, 180, 220), 15)
-
-
-def draw_sphere(img, d):
-    cx, cy, r = 980, GROUND - 70, 72
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(18, 28, 48, 255), outline=(0, 240, 255, 255), width=3)
-    # LED bands
-    for i in range(-4, 5):
-        yy = cy + i * 12
-        # chord width
-        dy = abs(yy - cy)
-        if dy >= r:
-            continue
-        half = int(math.sqrt(r * r - dy * dy) - 4)
-        col = (255, 80, 200, 180) if i % 2 == 0 else (0, 240, 255, 160)
-        d.arc([cx - half, yy - 3, cx + half, yy + 3], 0, 180, fill=col, width=2)
-    img.alpha_composite(glow_layer(img.size, cx, cy, 90, (0, 240, 255), 70))
-    img.alpha_composite(glow_layer(img.size, cx, cy - 10, 60, (255, 60, 180), 40))
-    neon_text(d, cx - 34, cy - r - 22, "SPHERE", (0, 245, 255, 255), (0, 180, 220), 14)
+def draw_flamingo(img, d, rng):
+    # Pink Flamingo hotel + neon flamingo icon
+    x = 860
+    tower_block(img, d, x, GROUND - 140, 95, 140, (70, 30, 55, 255), (255, 90, 170, 255), rng, warm=True)
+    # neon flamingo silhouette
+    fx, fy = x + 105, GROUND - 110
+    # body
+    d.ellipse([fx, fy + 20, fx + 48, fy + 55], fill=(255, 90, 170, 255))
+    # neck curve
+    for i in range(28):
+        t = i / 28
+        px = fx + 30 + int(18 * math.sin(t * math.pi))
+        py = fy + 25 - i
+        d.ellipse([px - 3, py - 3, px + 3, py + 3], fill=(255, 110, 180, 255))
+    # head + beak
+    d.ellipse([fx + 42, fy - 8, fx + 56, fy + 8], fill=(255, 90, 170, 255))
+    d.polygon([(fx + 54, fy), (fx + 72, fy + 4), (fx + 54, fy + 8)], fill=(255, 200, 80, 255))
+    # legs
+    d.line([(fx + 18, fy + 52), (fx + 12, GROUND)], fill=(255, 180, 80, 255), width=2)
+    d.line([(fx + 30, fy + 52), (fx + 34, GROUND)], fill=(255, 180, 80, 255), width=2)
+    img.alpha_composite(glow(img.size, fx + 30, fy + 20, 40, (255, 80, 170), 85))
+    neon_label(d, x + 8, GROUND - 158, "FLAMINGO", (255, 120, 190, 255), 13, (255, 60, 140))
 
 
 def draw_high_roller(img, d):
-    cx, cy, r = 1160, GROUND - 95, 85
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(255, 60, 160, 255), width=4)
-    for a in range(0, 360, 15):
+    # Large blue observation wheel — far right (reference)
+    cx, cy, r = 1165, GROUND - 100, 95
+    # outer rim
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(80, 200, 255, 255), width=5)
+    d.ellipse([cx - r + 8, cy - r + 8, cx + r - 8, cy + r - 8], outline=(120, 220, 255, 180), width=2)
+    # spokes + cabins
+    for a in range(0, 360, 12):
         rad = math.radians(a)
-        x2 = cx + int(math.cos(rad) * (r - 4))
-        y2 = cy + int(math.sin(rad) * (r - 4))
-        d.line([(cx, cy), (x2, y2)], fill=(255, 80, 180, 90), width=1)
-        d.ellipse([x2 - 3, y2 - 3, x2 + 3, y2 + 3], fill=(255, 220, 100, 230))
-    # support
-    d.polygon([(cx - 20, GROUND), (cx, cy + 20), (cx + 20, GROUND)], fill=(40, 30, 55, 255), outline=(255, 80, 180, 255))
-    img.alpha_composite(glow_layer(img.size, cx, cy, 70, (255, 60, 160), 75))
-    neon_text(d, cx - 50, cy - r - 18, "HIGH ROLLER", (255, 100, 180, 255), (255, 40, 140), 12)
+        x2 = cx + int(math.cos(rad) * (r - 6))
+        y2 = cy + int(math.sin(rad) * (r - 6))
+        d.line([(cx, cy), (x2, y2)], fill=(60, 160, 220, 100), width=1)
+        d.rectangle([x2 - 4, y2 - 5, x2 + 4, y2 + 5], fill=(200, 240, 255, 230), outline=(80, 200, 255, 255))
+    # hub
+    d.ellipse([cx - 10, cy - 10, cx + 10, cy + 10], fill=(40, 80, 120, 255), outline=(120, 230, 255, 255), width=2)
+    # support legs
+    d.polygon([(cx - 35, GROUND), (cx - 8, cy + 30), (cx + 8, cy + 30), (cx + 35, GROUND)], fill=(35, 40, 60, 255), outline=(80, 200, 255, 255))
+    img.alpha_composite(glow(img.size, cx, cy, 85, (80, 200, 255), 80))
 
 
-def draw_filler_towers(img, d, rng):
-    specs = [
-        (110, 150, 40, (35, 28, 60), (0, 240, 255), True),
-        (195, 175, 48, (48, 24, 55), (255, 200, 60), False),
-        (250, 130, 55, (30, 36, 65), (255, 80, 180), True),
-        (600, 120, 36, (40, 30, 58), (0, 240, 255), True),
-        (680, 145, 30, (50, 28, 50), (255, 120, 40), False),
-        (910, 155, 42, (34, 40, 70), (255, 80, 180), True),
-        (1055, 125, 38, (42, 30, 60), (255, 220, 80), False),
-        (1225, 140, 45, (36, 32, 62), (0, 240, 255), True),
-    ]
-    for x, h, w, body, accent, cool in specs:
-        building(img, d, x, GROUND - h, w, h, (*body, 255), (*accent, 255), rng, cool=cool)
-
-
-def draw_neon_signs(img, d):
-    signs = [
-        (200, GROUND - 195, "CASINO", (255, 60, 160), 14),
-        (260, GROUND - 155, "STRIP", (0, 245, 255), 13),
-        (450, GROUND - 165, "VEGAS", (255, 220, 80), 18),
-        (760, GROUND - 215, "NEON", (255, 80, 180), 14),
-        (1040, GROUND - 175, "NIGHT", (0, 245, 255), 13),
-    ]
-    for x, y, label, col, sz in signs:
-        # blade / marquee plate
-        d.rectangle([x - 4, y - 4, x + len(label) * (sz // 2) + 10, y + sz + 6], fill=(10, 6, 24, 220), outline=(*col, 255), width=2)
-        neon_text(d, x, y, label, (*col, 255), col, sz)
-        img.alpha_composite(glow_layer(img.size, x + 30, y + 8, 28, col, 55))
-
-    # Vertical blade
-    d.rectangle([290, GROUND - 210, 304, GROUND - 90], fill=(8, 6, 20, 255), outline=(255, 60, 160, 255), width=2)
-    neon_text(d, 292, GROUND - 200, "V\nI\nP", (255, 220, 100, 255), (255, 180, 40), 12)
-    img.alpha_composite(glow_layer(img.size, 297, GROUND - 150, 22, (255, 60, 160), 70))
+def draw_backfill(img, d, rng):
+    # Dense filler hotels between landmarks
+    for x, h, w, body, accent, warm in (
+        (20, 100, 30, (30, 25, 50), (255, 80, 160), True),
+        (200, 120, 28, (35, 28, 55), (0, 230, 255), False),
+        (420, 110, 40, (40, 30, 50), (255, 180, 60), True),
+        (650, 95, 28, (32, 30, 55), (255, 90, 170), True),
+        (830, 105, 26, (38, 28, 52), (0, 230, 255), False),
+        (970, 115, 40, (42, 32, 58), (255, 200, 70), True),
+        (1080, 90, 35, (34, 30, 55), (255, 80, 160), True),
+    ):
+        tower_block(img, d, x, GROUND - h, w, h, (*body, 255), (*accent, 255), rng, warm=warm)
 
 
 def draw_palms(img, d):
-    for px0 in (125, 305, 490, 700, 880, 1120, 1260):
-        d.line([(px0, GROUND), (px0, GROUND - 58)], fill=(20, 55, 38, 255), width=3)
-        for ang in (-55, -25, 5, 35, 55):
+    for px0 in (115, 310, 500, 640, 850, 1020, 1240):
+        d.line([(px0, GROUND), (px0, GROUND - 52)], fill=(25, 60, 40, 255), width=3)
+        for ang in (-50, -20, 10, 40):
             rad = math.radians(ang)
             d.line(
                 [
-                    (px0, GROUND - 58),
-                    (px0 + int(math.cos(rad) * 34), GROUND - 58 + int(math.sin(rad) * 14) - 12),
+                    (px0, GROUND - 52),
+                    (px0 + int(math.cos(rad) * 30), GROUND - 52 + int(math.sin(rad) * 12) - 10),
                 ],
-                fill=(40, 110, 60, 255),
+                fill=(45, 120, 65, 255),
                 width=2,
             )
-        # neon ring at trunk
-        d.ellipse([px0 - 5, GROUND - 20, px0 + 5, GROUND - 10], outline=(255, 80, 180, 180), width=1)
 
 
 def paste_road(img):
-    road = Image.open(ROADS / "road_scroll.png").convert("RGBA")
-    under = ImageEnhance.Brightness(road).enhance(0.7).filter(ImageFilter.GaussianBlur(1.1))
-    img.paste(under, (0, ROAD_TOP))
+    road_path = ROADS / "road_scroll.png"
+    if road_path.exists():
+        road = Image.open(road_path).convert("RGBA")
+        under = ImageEnhance.Brightness(road).enhance(0.68).filter(ImageFilter.GaussianBlur(1.0))
+        img.paste(under, (0, ROAD_TOP))
+    else:
+        d = ImageDraw.Draw(img)
+        d.rectangle([0, ROAD_TOP, W, H], fill=(22, 24, 32, 255))
+
+
+def enrich_road_reflections(img, rng):
+    """Paint soft neon blobs on the static road underlay (like the reference)."""
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    colors = [(255, 90, 180), (80, 200, 255), (255, 200, 70), (255, 130, 50)]
+    for i in range(24):
+        x = 40 + i * 52
+        y = ROAD_TOP + 35 + (i % 3) * 45
+        col = colors[i % len(colors)]
+        d.ellipse([x - 40, y - 12, x + 40, y + 12], fill=(*col, 55))
+    layer = layer.filter(ImageFilter.GaussianBlur(5))
+    img.alpha_composite(layer)
 
 
 def main():
-    rng = random.Random(2026)
-    img = Image.new("RGBA", (W, H), (10, 6, 24, 255))
+    rng = random.Random(77)
+    img = Image.new("RGBA", (W, H), (8, 6, 22, 255))
     d = ImageDraw.Draw(img)
 
-    make_sky(img, d, rng)
-    # redraw draw after sky composites
+    paint_sky(img, d, rng)
     d = ImageDraw.Draw(img)
 
-    # Dense back-row silhouettes
-    for i in range(28):
-        x = i * 46 - 10
-        h = 40 + (i * 17) % 70
-        body = (22 + (i % 5) * 3, 18, 40 + (i % 4) * 4, 255)
-        accent = [(255, 60, 160), (0, 240, 255), (255, 200, 60), (180, 80, 255)][i % 4]
-        neon_rect(d, [x, GROUND - h, x + 40, GROUND], body, (*accent, 180), 1)
-        if i % 3 == 0:
-            d.rectangle([x, GROUND - h, x + 40, GROUND - h + 3], fill=(*accent, 220))
+    # distant silhouette row
+    for i in range(36):
+        x = i * 38 - 8
+        h = 35 + (i * 13) % 55
+        body = (18 + (i % 4) * 4, 14, 36 + (i % 3) * 6, 255)
+        d.rectangle([x, GROUND - h, x + 34, GROUND], fill=body)
 
-    draw_filler_towers(img, d, rng)
+    draw_backfill(img, d, rng)
     d = ImageDraw.Draw(img)
 
-    draw_welcome_sign(img, d)
-    draw_stratosphere(img, d, rng)
+    # Reference left→right landmark order
+    draw_strat(img, d, rng)
+    draw_welcome(img, d)
+    draw_palazzo(img, d, rng)
     draw_bellagio(img, d, rng)
-    draw_caesars(img, d, rng)
-    draw_eiffel(img, d)
-    draw_luxor(img, d)
-    draw_sphere(img, d)
+    draw_paris(img, d)
+    draw_flamingo(img, d, rng)
     draw_high_roller(img, d)
-    draw_neon_signs(img, d)
     draw_palms(img, d)
 
-    make_water(img, d, rng)
+    paint_waterfront(img, d, rng)
     paste_road(img)
+    enrich_road_reflections(img, rng)
 
-    # Global bloom pass — key to matching SF neon glow
-    bloom = img.filter(ImageFilter.GaussianBlur(2.8))
-    img = Image.blend(img, bloom, 0.28)
-    # Extra saturation punch on highlights
-    enhancer = ImageEnhance.Color(img)
-    img = enhancer.enhance(1.18)
-    enhancer = ImageEnhance.Contrast(img)
-    img = enhancer.enhance(1.08)
+    # Bloom + punch — match SF neon glow
+    bloom = img.filter(ImageFilter.GaussianBlur(3.0))
+    img = Image.blend(img, bloom, 0.32)
+    img = ImageEnhance.Color(img).enhance(1.22)
+    img = ImageEnhance.Contrast(img).enhance(1.1)
 
     BG.mkdir(parents=True, exist_ok=True)
     out = BG / "city_vegas.png"
     img.save(out, "PNG")
-    print(f"wrote {out} {img.size}")
+    print(f"wrote {out} ({img.size})")
 
-    # preview
     prev = Path("/opt/cursor/artifacts/screenshots")
     prev.mkdir(parents=True, exist_ok=True)
     img.save(prev / "city_vegas-preview.png")
-    print("preview saved")
+    # side-by-side with SF for QA
+    sf = Image.open(BG / "city_sf.png").convert("RGBA")
+    cmp = Image.new("RGBA", (W * 2, H), (0, 0, 0, 255))
+    cmp.paste(sf, (0, 0))
+    cmp.paste(img, (W, 0))
+    cmp.save(prev / "city-sf-vegas-compare.png")
+    print("preview + compare saved")
 
 
 if __name__ == "__main__":
