@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build Zoox robotaxi sprites from the mint seafoam reference plate.
+Build Zoox robotaxi sprites from the painted reference plate.
 
 Source: scripts/art/sources/zoox_robotaxi_ref.png
 Outputs: public/assets/zoox/zoox_{0,1,}.png + effects/zoox_underglow.png
@@ -67,14 +67,15 @@ def key_background(src: Image.Image) -> Image.Image:
 
 
 def polish_colors(img: Image.Image) -> Image.Image:
-    """Push body toward mint seafoam; punch cyan / purple neon for the night road."""
+    """Keep off-white body; punch cyan / purple neon for the night road."""
     arr = np.array(img).astype(np.float32)
     r, g, b, a = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
 
-    mint = (g > r + 8) & (g > b + 5) & (g > 70) & (g < 230) & (a > 180)
-    r = np.where(mint, r * 0.55 + 120 * 0.45, r)
-    g = np.where(mint, np.minimum(255, g * 0.55 + 220 * 0.45), g)
-    b = np.where(mint, b * 0.55 + 185 * 0.45, b)
+    # Slight cool lift on pale body panels (not mint).
+    pale = (a > 180) & (r > 150) & (g > 150) & (b > 150) & (np.abs(r - g) < 25) & (np.abs(g - b) < 25)
+    r = np.where(pale, np.minimum(255, r * 1.02 + 4), r)
+    g = np.where(pale, np.minimum(255, g * 1.02 + 4), g)
+    b = np.where(pale, np.minimum(255, b * 1.03 + 6), b)
 
     cyan = (b > 140) & (g > 120) & (r < 120) & (a > 100)
     g = np.where(cyan, np.minimum(255, g * 1.08), g)
@@ -102,11 +103,11 @@ def fit_car(img: Image.Image) -> Image.Image:
         min(img.height, y1 + pad),
     ))
     cw, ch = CANVAS
-    # Compact arcade pod — keep it stubby vs traffic / lane width.
-    target_aspect = 1.18  # width / height
-    scale_h = (ch - 24) / crop.height
+    # Compact arcade pod from the user reference (short, not limo-long).
+    target_aspect = 1.22  # width / height
+    scale_h = (ch - 22) / crop.height
     nh = int(crop.height * scale_h)
-    nw = min(int(nh * target_aspect), cw - 80)
+    nw = min(int(nh * target_aspect), cw - 70)
     car = crop.resize((nw, nh), Image.Resampling.LANCZOS)
     return car.filter(ImageFilter.UnsharpMask(radius=1.0, percent=130, threshold=2))
 

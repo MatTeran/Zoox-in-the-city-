@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { ASSET_KEYS, INVINCIBLE_MS, LANE_Y, PLAYER_X } from '../config.js';
 
 /**
- * Zoox RoboTaxi — white carriage body, cyan underglow, planted tires.
+ * Zoox RoboTaxi — off-white compact pod, cyan underglow, planted tires.
  * Lane Y is authoritative; wheels stay on the asphalt.
  */
 export class Zoox extends Phaser.Physics.Arcade.Sprite {
