@@ -58,6 +58,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image(ASSET_KEYS.ZOOX_1, 'assets/zoox/zoox_1.png');
     this.load.image(ASSET_KEYS.HEADLIGHT, 'assets/effects/headlight_cone.png');
     this.load.image(ASSET_KEYS.TAILLIGHT, 'assets/effects/taillight_glow.png');
+    this.load.image(ASSET_KEYS.UNDERGLOW, 'assets/effects/zoox_underglow.png');
     this.load.image(ASSET_KEYS.SHADOW, 'assets/effects/shadow.png');
 
     // Traffic

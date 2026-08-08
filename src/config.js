@@ -84,6 +84,7 @@ export const ASSET_KEYS = {
   ZOOX_1: 'zoox_1',
   HEADLIGHT: 'headlight_cone',
   TAILLIGHT: 'taillight_glow',
+  UNDERGLOW: 'zoox_underglow',
   SHADOW: 'shadow',
   PICKUP_SPARK: 'pickup_spark',
   NEON_BURST: 'neon_burst',
@@ -108,8 +109,7 @@ export const PAINTED_ASSET_KEYS = [
   ASSET_KEYS.CITY_SF,
   ASSET_KEYS.CITY_VEGAS,
   ASSET_KEYS.ROAD_SCROLL,
-  ASSET_KEYS.ZOOX,
-  ASSET_KEYS.ZOOX_1,
+  // Zoox uses crisp nearest-neighbor pixel art (see make_zoox_robotaxi.py).
   ASSET_KEYS.ZCOIN,
   ASSET_KEYS.ZCOIN_HUD,
   ...ASSET_KEYS.ZCOIN_FRAMES,

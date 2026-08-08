@@ -2,8 +2,8 @@ import Phaser from 'phaser';
 import { ASSET_KEYS, INVINCIBLE_MS, LANE_Y, PLAYER_X } from '../config.js';
 
 /**
- * Zoox RoboTaxi — grounded on the road (no hover).
- * Lane Y is authoritative; wheels stay planted.
+ * Zoox RoboTaxi — white carriage body, cyan underglow, planted tires.
+ * Lane Y is authoritative; wheels stay on the asphalt.
  */
 export class Zoox extends Phaser.Physics.Arcade.Sprite {
   /**
@@ -23,36 +23,55 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
 
     // Origin at the tire contact row so the car sits on the asphalt.
-    this.setOrigin(0.5, 0.95);
+    this.setOrigin(0.5, 0.92);
     this.setDepth(30);
-    this.setScale(0.98);
+    this.setScale(1.02);
     this.setCollideWorldBounds(false);
 
-    // Body-only hitbox — exclude tires/shadow padding.
-    this.body.setSize(this.width * 0.56, this.height * 0.38);
-    this.body.setOffset(this.width * 0.22, this.height * 0.22);
+    // Body-only hitbox — exclude tires / underglow padding.
+    this.body.setSize(this.width * 0.58, this.height * 0.42);
+    this.body.setOffset(this.width * 0.21, this.height * 0.22);
 
     if (scene.anims.exists('zoox-drive')) {
       this.play('zoox-drive');
     }
 
-    // Contact shadow under the tires (road shadow, not hover glow).
+    // Contact shadow under the tires.
     this.shadow = scene.add.image(this.x, this.baseY + 4, ASSET_KEYS.SHADOW)
       .setDepth(27)
-      .setScale(1.55, 0.65)
-      .setAlpha(0.5);
+      .setScale(1.7, 0.7)
+      .setAlpha(0.48);
 
-    this.headlight = scene.add.image(this.x + 70, this.y - 28, ASSET_KEYS.HEADLIGHT)
-      .setOrigin(0, 0.5)
-      .setDepth(29)
-      .setScale(0.6)
-      .setAlpha(0.38)
+    // Soft ADD underglow pulse (wet neon road spill).
+    this.underglow = scene.add.image(this.x, this.baseY + 2, ASSET_KEYS.UNDERGLOW)
+      .setDepth(28)
+      .setScale(1.15, 0.95)
+      .setAlpha(0.55)
       .setBlendMode(Phaser.BlendModes.ADD);
 
-    this.taillight = scene.add.image(this.x - 62, this.y - 28, ASSET_KEYS.TAILLIGHT)
+    scene.tweens.add({
+      targets: this.underglow,
+      alpha: { from: 0.42, to: 0.72 },
+      scaleX: { from: 1.08, to: 1.22 },
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Front cyan spill / rear magenta spill (bidirectional robotaxi cues).
+    this.headlight = scene.add.image(this.x + 78, this.y - 34, ASSET_KEYS.HEADLIGHT)
+      .setOrigin(0, 0.5)
       .setDepth(29)
-      .setScale(0.65)
-      .setAlpha(0.28)
+      .setScale(0.55)
+      .setAlpha(0.32)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
+    this.taillight = scene.add.image(this.x - 72, this.y - 34, ASSET_KEYS.TAILLIGHT)
+      .setDepth(29)
+      .setScale(0.7)
+      .setAlpha(0.34)
+      .setTint(0xff45d2)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.syncPosition();
@@ -64,8 +83,9 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
       this.y = this.baseY;
     }
     this.shadow.setPosition(this.x + 2, this.baseY + 4);
-    this.headlight.setPosition(this.x + 70, this.y - 28);
-    this.taillight.setPosition(this.x - 62, this.y - 28);
+    this.underglow?.setPosition(this.x, this.baseY + 2);
+    this.headlight.setPosition(this.x + 78, this.y - 34);
+    this.taillight.setPosition(this.x - 72, this.y - 34);
   }
 
   /**
@@ -92,8 +112,9 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
       ease: 'Sine.easeOut',
       onUpdate: () => {
         this.shadow.setPosition(this.x + 2, this.y + 4);
-        this.headlight.setPosition(this.x + 70, this.y - 28);
-        this.taillight.setPosition(this.x - 62, this.y - 28);
+        this.underglow?.setPosition(this.x, this.y + 2);
+        this.headlight.setPosition(this.x + 78, this.y - 34);
+        this.taillight.setPosition(this.x - 72, this.y - 34);
       },
       onComplete: () => {
         this.changingLane = false;
@@ -130,6 +151,7 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
 
   destroy(fromScene) {
     this.shadow?.destroy();
+    this.underglow?.destroy();
     this.headlight?.destroy();
     this.taillight?.destroy();
     super.destroy(fromScene);

@@ -607,77 +607,13 @@ def make_road_reflection():
 
 # ---------------- ZOOX ----------------
 
-def draw_zoox(frame=0):
-    """White/black robotaxi with cyan neon underglow (menu reference)."""
-    img = new(96, 56)
-    # soft headlight / underglow spills
-    glow(img, 78, 30, 16, C["cyan"], 70)
-    glow(img, 78, 32, 10, C["white"], 40)
-    glow(img, 48, 48, 26, C["cyan"], 100)
-    glow(img, 20, 30, 10, C["red"], 40)
-
-    # ground shadow
-    rect(img, 20, 48, 58, 4, (0, 0, 0, 70))
-
-    # white boxy body + black lower trim (reference)
-    rect(img, 16, 14, 62, 26, C["zoox"])
-    rect(img, 18, 11, 58, 6, C["zoox2"])
-    hline(img, 20, 10, 54, C["zoox3"])
-    vline(img, 16, 14, 26, C["zoox3"])
-    vline(img, 77, 14, 26, C["zoox3"])
-    rect(img, 17, 30, 60, 10, C["zoox3"])  # black lower panel
-    hline(img, 20, 28, 54, C["cyan"])       # cyan belt line
-
-    # glass
-    rect(img, 20, 16, 52, 12, C["glass"])
-    rect(img, 22, 18, 18, 8, C["cabin"])
-    rect(img, 50, 18, 20, 8, C["cabin"])
-    hline(img, 22, 17, 16, (0, 245, 255, 90))
-    hline(img, 50, 17, 18, (0, 245, 255, 90))
-    vline(img, 46, 15, 18, C["zoox3"])
-
-    # roof lidar / sensors — cyan neon
-    rect(img, 40, 5, 16, 6, C["zoox3"])
-    rect(img, 42, 4, 12, 3, C["steel"])
-    put(img, 44, 3, C["cyan"])
-    put(img, 52, 3, C["cyan"])
-    glow(img, 48, 4, 6, C["cyan"], 110)
-    rect(img, 12, 20, 4, 9, C["zoox3"])
-    rect(img, 80, 20, 4, 9, C["zoox3"])
-    put(img, 13, 22, C["cyan"])
-    put(img, 81, 22, C["cyan"])
-
-    # lights
-    rect(img, 76, 32, 6, 4, C["white"])
-    rect(img, 76, 36, 6, 3, C["yellow"])
-    rect(img, 14, 32, 3, 6, C["red"])
-    put(img, 14, 33, C["pink"])
-    if frame % 2:
-        put(img, 75, 22, C["amber"])
-        put(img, 16, 22, C["amber"])
-
-    text(img, 30, 34, "ZOOX", C["cyan"], 4)
-
-    # wheels
-    wy = 42 + (frame % 2)
-    for wx in (24, 62):
-        rect(img, wx - 1, 40, 11, 2, C["zoox3"])
-        rect(img, wx, wy, 10, 10, C["black"])
-        rect(img, wx + 1, wy + 1, 8, 8, C["slate"])
-        if frame % 2 == 0:
-            hline(img, wx + 2, wy + 5, 6, C["cyan"])
-            put(img, wx + 4, wy + 3, C["white"])
-        else:
-            vline(img, wx + 5, wy + 2, 6, C["cyan"])
-            put(img, wx + 3, wy + 5, C["white"])
-        put(img, wx + 1, wy + 1, C["steel"])
-    return img
-
-
 def make_zoox():
-    for i in range(2):
-        save(draw_zoox(i), f"zoox/zoox_{i}.png")
-    save(draw_zoox(0), "zoox/zoox.png")
+    """Delegate robotaxi body art to the reference-matched painter."""
+    import subprocess
+    import sys
+
+    script = Path(__file__).resolve().parent / "make_zoox_robotaxi.py"
+    subprocess.check_call([sys.executable, str(script)])
 
     # soft headlight cone spill
     cone = new(72, 32)
@@ -687,7 +623,7 @@ def make_zoox():
             if abs(y - 16) <= spread:
                 a = int((1 - x / 71) * 100)
                 if abs(y - 16) < spread * 0.35:
-                    put(cone, x, y, (220, 255, 230, a))  # cyan-green like reference
+                    put(cone, x, y, (220, 255, 230, a))
                 else:
                     put(cone, x, y, (120, 230, 255, a // 2))
     save(cone, "effects/headlight_cone.png")
@@ -703,9 +639,9 @@ def make_zoox():
                 put(sh, x, y, (0, 0, 0, a))
     save(sh, "effects/shadow.png")
 
-    # rear red light spill
+    # rear light spill (tinted magenta at runtime for Zoox)
     red = new(28, 18)
-    glow(red, 14, 9, 12, C["red"], 100)
+    glow(red, 14, 9, 12, C["magenta"], 100)
     save(red, "effects/taillight_glow.png")
 
 
