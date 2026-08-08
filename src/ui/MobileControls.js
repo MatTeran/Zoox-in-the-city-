@@ -127,7 +127,7 @@ export class MobileControls {
       });
 
     let busy = false;
-    zone.on('pointerdown', (pointer) => {
+    const press = (pointer) => {
       pointer?.event?.preventDefault?.();
       if (busy) return;
       busy = true;
@@ -143,7 +143,10 @@ export class MobileControls {
         },
       });
       onPress?.();
-    });
+    };
+    // pointerup is more reliable than pointerdown alone on iOS WebViews.
+    zone.on('pointerdown', press);
+    zone.on('pointerup', press);
 
     return { zone, root, paint };
   }
@@ -209,18 +212,26 @@ export class MobileControls {
         useHandCursor: true,
       });
 
-    zone.on('pointerdown', (pointer) => {
+    let busy = false;
+    const press = (pointer) => {
       pointer?.event?.preventDefault?.();
+      if (busy) return;
+      busy = true;
       paint(true);
       this.scene.tweens.add({
         targets: root,
         scale: 0.9,
         duration: 55,
         yoyo: true,
-        onComplete: () => paint(false),
+        onComplete: () => {
+          paint(false);
+          busy = false;
+        },
       });
       onPress?.();
-    });
+    };
+    zone.on('pointerdown', press);
+    zone.on('pointerup', press);
 
     return { zone, root, paint };
   }
