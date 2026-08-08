@@ -89,6 +89,7 @@ def polish_colors(img: Image.Image) -> Image.Image:
 
 
 def fit_car(img: Image.Image) -> Image.Image:
+    """Fit the keyed plate into the canvas, shortened horizontally for arcade read."""
     bbox = img.getbbox()
     if not bbox:
         raise RuntimeError("empty sprite after keying")
@@ -101,8 +102,12 @@ def fit_car(img: Image.Image) -> Image.Image:
         min(img.height, y1 + pad),
     ))
     cw, ch = CANVAS
-    scale = min((cw - 20) / crop.width, (ch - 16) / crop.height)
-    car = crop.resize((int(crop.width * scale), int(crop.height * scale)), Image.Resampling.LANCZOS)
+    # Shorter arcade silhouette (source plates are too stretched vs traffic).
+    target_aspect = 1.32  # width / height
+    scale_h = (ch - 28) / crop.height
+    nh = int(crop.height * scale_h)
+    nw = min(int(nh * target_aspect), cw - 40)
+    car = crop.resize((nw, nh), Image.Resampling.LANCZOS)
     return car.filter(ImageFilter.UnsharpMask(radius=1.0, percent=130, threshold=2))
 
 
@@ -114,11 +119,12 @@ def compose(car: Image.Image, glow_boost: float = 1.0) -> Image.Image:
     cx = cw // 2
     cy = y + int(car.height * 0.86)
     glow = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+    # Keep glow pools under the shortened body (avoid wide bbox stretch).
     for rx, ry, col, blur, ox in (
-        (150, 16, (0, 230, 255, int(55 * glow_boost)), 5, 0),
-        (100, 9, (160, 250, 255, int(40 * glow_boost)), 2.5, 0),
-        (36, 12, (220, 70, 255, int(40 * glow_boost)), 3.5, -110),
-        (36, 12, (220, 70, 255, int(40 * glow_boost)), 3.5, 110),
+        (100, 14, (0, 230, 255, int(55 * glow_boost)), 4, 0),
+        (68, 8, (160, 250, 255, int(40 * glow_boost)), 2.2, 0),
+        (28, 11, (220, 70, 255, int(38 * glow_boost)), 3.0, -72),
+        (28, 11, (220, 70, 255, int(38 * glow_boost)), 3.0, 72),
     ):
         layer = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
         ImageDraw.Draw(layer).ellipse([cx - rx + ox, cy - ry, cx + rx + ox, cy + ry], fill=col)

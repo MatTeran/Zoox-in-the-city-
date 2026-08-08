@@ -25,12 +25,13 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
     // Origin on the tire / wet-reflection contact line.
     this.setOrigin(0.5, 0.84);
     this.setDepth(30);
-    this.setScale(0.78);
+    // Shorter silhouette: compress X a touch more than Y.
+    this.setScale(0.68, 0.8);
     this.setCollideWorldBounds(false);
 
     // Body-only hitbox — exclude baked wet reflection padding.
-    this.body.setSize(this.width * 0.50, this.height * 0.32);
-    this.body.setOffset(this.width * 0.25, this.height * 0.20);
+    this.body.setSize(this.width * 0.52, this.height * 0.34);
+    this.body.setOffset(this.width * 0.24, this.height * 0.20);
 
     if (scene.anims.exists('zoox-drive')) {
       this.play('zoox-drive');
@@ -60,14 +61,14 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
     });
 
     // Front cyan spill / rear magenta spill (bidirectional robotaxi cues).
-    this.headlight = scene.add.image(this.x + 88, this.y - 28, ASSET_KEYS.HEADLIGHT)
+    this.headlight = scene.add.image(this.x + 70, this.y - 28, ASSET_KEYS.HEADLIGHT)
       .setOrigin(0, 0.5)
       .setDepth(29)
       .setScale(0.5)
       .setAlpha(0.28)
       .setBlendMode(Phaser.BlendModes.ADD);
 
-    this.taillight = scene.add.image(this.x - 82, this.y - 28, ASSET_KEYS.TAILLIGHT)
+    this.taillight = scene.add.image(this.x - 66, this.y - 28, ASSET_KEYS.TAILLIGHT)
       .setDepth(29)
       .setScale(0.65)
       .setAlpha(0.3)
@@ -84,8 +85,8 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
     }
     this.shadow.setPosition(this.x + 2, this.baseY + 6);
     this.underglow?.setPosition(this.x, this.baseY + 4);
-    this.headlight.setPosition(this.x + 88, this.y - 28);
-    this.taillight.setPosition(this.x - 82, this.y - 28);
+    this.headlight.setPosition(this.x + 70, this.y - 28);
+    this.taillight.setPosition(this.x - 66, this.y - 28);
   }
 
   /**
@@ -113,8 +114,8 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
       onUpdate: () => {
         this.shadow.setPosition(this.x + 2, this.y + 6);
         this.underglow?.setPosition(this.x, this.y + 4);
-        this.headlight.setPosition(this.x + 88, this.y - 28);
-        this.taillight.setPosition(this.x - 82, this.y - 28);
+        this.headlight.setPosition(this.x + 70, this.y - 28);
+        this.taillight.setPosition(this.x - 66, this.y - 28);
       },
       onComplete: () => {
         this.changingLane = false;
