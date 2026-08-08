@@ -3,7 +3,7 @@ import { COLORS } from '../config.js';
 
 /**
  * Modern glass lane pad — soft shell, thin chevrons, quiet neon accents.
- * Built to feel like a Zoox cabin control, not a stock arcade sticker.
+ * Hit targets are full rectangles (Phaser circle hitAreas are top-left based).
  */
 export class MobileControls {
   /**
@@ -44,7 +44,8 @@ export class MobileControls {
       onPress: handlers.onPause,
     });
 
-    scene.input.setTopOnly(true);
+    // Allow overlapping UI to receive presses; zones sit above art graphics.
+    scene.input.setTopOnly(false);
   }
 
   /**
@@ -114,13 +115,14 @@ export class MobileControls {
       .setScrollFactor(0)
       .setDepth(depth);
 
-    const hitR = radius + 14;
-    const zone = this.scene.add.zone(x, y, hitR * 2, hitR * 2)
+    // Full rectangular hit box covering the visible key (generous for thumbs).
+    const hit = 96;
+    const zone = this.scene.add.zone(x, y, hit, hit)
       .setScrollFactor(0)
       .setDepth(depth + 2)
       .setInteractive({
-        hitArea: new Phaser.Geom.Circle(0, 0, hitR),
-        hitAreaCallback: Phaser.Geom.Circle.Contains,
+        hitArea: new Phaser.Geom.Rectangle(0, 0, hit, hit),
+        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
         useHandCursor: true,
       });
 
@@ -197,12 +199,13 @@ export class MobileControls {
       .setScrollFactor(0)
       .setDepth(depth);
 
-    const zone = this.scene.add.zone(x, y, 48, 48)
+    const hit = 56;
+    const zone = this.scene.add.zone(x, y, hit, hit)
       .setScrollFactor(0)
       .setDepth(depth + 2)
       .setInteractive({
-        hitArea: new Phaser.Geom.Circle(0, 0, 24),
-        hitAreaCallback: Phaser.Geom.Circle.Contains,
+        hitArea: new Phaser.Geom.Rectangle(0, 0, hit, hit),
+        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
         useHandCursor: true,
       });
 
