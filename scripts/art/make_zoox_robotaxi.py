@@ -67,21 +67,32 @@ def key_background(src: Image.Image) -> Image.Image:
 
 
 def polish_colors(img: Image.Image) -> Image.Image:
-    """Keep off-white body; punch cyan / purple neon for the night road."""
+    """Tint pale body panels soft Zoox blue; punch cyan / purple neon."""
     arr = np.array(img).astype(np.float32)
     r, g, b, a = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
+    lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    mx = np.maximum(np.maximum(r, g), b)
+    mn = np.minimum(np.minimum(r, g), b)
+    sat = (mx - mn) / np.maximum(mx, 1.0)
 
-    # Slight cool lift on pale body panels (not mint).
-    pale = (a > 180) & (r > 150) & (g > 150) & (b > 150) & (np.abs(r - g) < 25) & (np.abs(g - b) < 25)
-    r = np.where(pale, np.minimum(255, r * 1.02 + 4), r)
-    g = np.where(pale, np.minimum(255, g * 1.02 + 4), g)
-    b = np.where(pale, np.minimum(255, b * 1.03 + 6), b)
+    neon_cyan = (b > 140) & (g > 110) & (r < 130) & (b > r + 30)
+    neon_purp = (r > 110) & (b > 130) & (g < r * 0.9) & (b > g + 20)
+    dark = lum < 70
+    body = (a > 160) & (~neon_cyan) & (~neon_purp) & (~dark) & (sat < 0.38) & (lum > 85)
 
-    cyan = (b > 140) & (g > 120) & (r < 120) & (a > 100)
+    t = np.clip((lum - 90) / 140.0, 0, 1)
+    br = 74 + t * 90
+    bg_ = 139 + t * 70
+    bb = 184 + t * 50
+    blend = 0.84
+    r = np.where(body, r * (1 - blend) + br * blend, r)
+    g = np.where(body, g * (1 - blend) + bg_ * blend, g)
+    b = np.where(body, b * (1 - blend) + bb * blend, b)
+
+    cyan = neon_cyan & (a > 100)
     g = np.where(cyan, np.minimum(255, g * 1.08), g)
     b = np.where(cyan, np.minimum(255, b * 1.12), b)
-
-    purp = (r > 120) & (b > 140) & (g < r * 0.85) & (a > 100)
+    purp = neon_purp & (a > 100)
     r = np.where(purp, np.minimum(255, r * 1.1), r)
     b = np.where(purp, np.minimum(255, b * 1.08), b)
 
