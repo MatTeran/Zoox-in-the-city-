@@ -81,10 +81,11 @@ def polish_colors(img: Image.Image) -> Image.Image:
     body = (a > 160) & (~neon_cyan) & (~neon_purp) & (~dark) & (sat < 0.38) & (lum > 85)
 
     t = np.clip((lum - 90) / 140.0, 0, 1)
-    br = 74 + t * 90
-    bg_ = 139 + t * 70
-    bb = 184 + t * 50
-    blend = 0.84
+    # Clearer Zoox blue (shade → mid → highlight), not cool gray.
+    br = 48 + t * 95
+    bg_ = 118 + t * 85
+    bb = 188 + t * 55
+    blend = 0.92
     r = np.where(body, r * (1 - blend) + br * blend, r)
     g = np.where(body, g * (1 - blend) + bg_ * blend, g)
     b = np.where(body, b * (1 - blend) + bb * blend, b)
