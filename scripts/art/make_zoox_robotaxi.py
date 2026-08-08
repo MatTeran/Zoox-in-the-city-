@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build high-quality Zoox robotaxi sprites from the painted reference plate.
+Build Zoox robotaxi sprites from the mint seafoam reference plate.
 
 Source: scripts/art/sources/zoox_robotaxi_ref.png
 Outputs: public/assets/zoox/zoox_{0,1,}.png + effects/zoox_underglow.png
@@ -37,12 +37,11 @@ def key_background(src: Image.Image) -> Image.Image:
         q.append((y, 0))
         q.append((y, w - 1))
 
-    thresh = 45
     while q:
         y, x = q.popleft()
         if y < 0 or y >= h or x < 0 or x >= w or visited[y, x]:
             continue
-        if lum[y, x] > thresh:
+        if lum[y, x] > 45:
             continue
         visited[y, x] = True
         q.append((y - 1, x))
@@ -59,12 +58,34 @@ def key_background(src: Image.Image) -> Image.Image:
     alpha[bg] = 0
     mask = (~bg).astype(np.uint8) * 255
     feather = np.array(
-        Image.fromarray(mask, "L").filter(ImageFilter.GaussianBlur(1.2)),
+        Image.fromarray(mask, "L").filter(ImageFilter.GaussianBlur(1.1)),
         dtype=np.float32,
     ) / 255.0
     alpha = np.minimum(alpha, feather * 255)
     arr[..., 3] = alpha.astype(np.uint8)
     return Image.fromarray(arr, "RGBA")
+
+
+def polish_colors(img: Image.Image) -> Image.Image:
+    """Push body toward mint seafoam; punch cyan / purple neon for the night road."""
+    arr = np.array(img).astype(np.float32)
+    r, g, b, a = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
+
+    mint = (g > r + 8) & (g > b + 5) & (g > 70) & (g < 230) & (a > 180)
+    r = np.where(mint, r * 0.55 + 120 * 0.45, r)
+    g = np.where(mint, np.minimum(255, g * 0.55 + 220 * 0.45), g)
+    b = np.where(mint, b * 0.55 + 185 * 0.45, b)
+
+    cyan = (b > 140) & (g > 120) & (r < 120) & (a > 100)
+    g = np.where(cyan, np.minimum(255, g * 1.08), g)
+    b = np.where(cyan, np.minimum(255, b * 1.12), b)
+
+    purp = (r > 120) & (b > 140) & (g < r * 0.85) & (a > 100)
+    r = np.where(purp, np.minimum(255, r * 1.1), r)
+    b = np.where(purp, np.minimum(255, b * 1.08), b)
+
+    out = np.stack([r, g, b, a], axis=-1)
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGBA")
 
 
 def fit_car(img: Image.Image) -> Image.Image:
@@ -73,15 +94,16 @@ def fit_car(img: Image.Image) -> Image.Image:
         raise RuntimeError("empty sprite after keying")
     pad = 10
     x0, y0, x1, y1 = bbox
-    x0 = max(0, x0 - pad)
-    y0 = max(0, y0 - pad)
-    x1 = min(img.width, x1 + pad)
-    y1 = min(img.height, y1 + pad)
-    crop = img.crop((x0, y0, x1, y1))
+    crop = img.crop((
+        max(0, x0 - pad),
+        max(0, y0 - pad),
+        min(img.width, x1 + pad),
+        min(img.height, y1 + pad),
+    ))
     cw, ch = CANVAS
     scale = min((cw - 20) / crop.width, (ch - 16) / crop.height)
-    nw, nh = int(crop.width * scale), int(crop.height * scale)
-    return crop.resize((nw, nh), Image.Resampling.LANCZOS)
+    car = crop.resize((int(crop.width * scale), int(crop.height * scale)), Image.Resampling.LANCZOS)
+    return car.filter(ImageFilter.UnsharpMask(radius=1.0, percent=130, threshold=2))
 
 
 def compose(car: Image.Image, glow_boost: float = 1.0) -> Image.Image:
@@ -92,12 +114,14 @@ def compose(car: Image.Image, glow_boost: float = 1.0) -> Image.Image:
     cx = cw // 2
     cy = y + int(car.height * 0.86)
     glow = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
-    for rx, ry, col, blur in (
-        (145, 16, (0, 220, 255, int(50 * glow_boost)), 5),
-        (95, 9, (150, 245, 255, int(35 * glow_boost)), 2.5),
+    for rx, ry, col, blur, ox in (
+        (150, 16, (0, 230, 255, int(55 * glow_boost)), 5, 0),
+        (100, 9, (160, 250, 255, int(40 * glow_boost)), 2.5, 0),
+        (36, 12, (220, 70, 255, int(40 * glow_boost)), 3.5, -110),
+        (36, 12, (220, 70, 255, int(40 * glow_boost)), 3.5, 110),
     ):
         layer = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
-        ImageDraw.Draw(layer).ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=col)
+        ImageDraw.Draw(layer).ellipse([cx - rx + ox, cy - ry, cx + rx + ox, cy + ry], fill=col)
         glow = Image.alpha_composite(glow, layer.filter(ImageFilter.GaussianBlur(blur)))
     out = Image.alpha_composite(out, glow)
     out.paste(car, (x, y), car)
@@ -107,8 +131,8 @@ def compose(car: Image.Image, glow_boost: float = 1.0) -> Image.Image:
 def make_underglow() -> Image.Image:
     ug = Image.new("RGBA", (240, 70), (0, 0, 0, 0))
     for rx, ry, col, blur in (
-        (110, 18, (0, 220, 255, 140), 7),
-        (70, 10, (160, 255, 255, 100), 3),
+        (110, 18, (0, 230, 255, 150), 7),
+        (70, 10, (170, 255, 255, 110), 3),
     ):
         layer = Image.new("RGBA", ug.size, (0, 0, 0, 0))
         ImageDraw.Draw(layer).ellipse([120 - rx, 28 - ry, 120 + rx, 28 + ry], fill=col)
@@ -119,11 +143,11 @@ def make_underglow() -> Image.Image:
 def main() -> None:
     if not SRC.exists():
         raise SystemExit(f"Missing source plate: {SRC}")
-    keyed = key_background(Image.open(SRC))
+    keyed = polish_colors(key_background(Image.open(SRC)))
     car = fit_car(keyed)
     frame0 = compose(car, 1.0)
-    car1 = ImageEnhance.Color(ImageEnhance.Brightness(car).enhance(1.04)).enhance(1.08)
-    frame1 = compose(car1, 1.18)
+    car1 = ImageEnhance.Color(ImageEnhance.Brightness(car).enhance(1.04)).enhance(1.1)
+    frame1 = compose(car1, 1.2)
 
     zoox_dir = OUT / "zoox"
     zoox_dir.mkdir(parents=True, exist_ok=True)
