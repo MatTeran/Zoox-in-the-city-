@@ -22,55 +22,55 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    // Origin at the tire contact row so the car sits on the asphalt.
-    this.setOrigin(0.5, 0.92);
+    // Origin on the tire / wet-reflection contact line.
+    this.setOrigin(0.5, 0.84);
     this.setDepth(30);
-    this.setScale(1.02);
+    this.setScale(0.78);
     this.setCollideWorldBounds(false);
 
-    // Body-only hitbox — exclude tires / underglow padding.
-    this.body.setSize(this.width * 0.58, this.height * 0.42);
-    this.body.setOffset(this.width * 0.21, this.height * 0.22);
+    // Body-only hitbox — exclude baked wet reflection padding.
+    this.body.setSize(this.width * 0.50, this.height * 0.32);
+    this.body.setOffset(this.width * 0.25, this.height * 0.20);
 
     if (scene.anims.exists('zoox-drive')) {
       this.play('zoox-drive');
     }
 
     // Contact shadow under the tires.
-    this.shadow = scene.add.image(this.x, this.baseY + 4, ASSET_KEYS.SHADOW)
+    this.shadow = scene.add.image(this.x, this.baseY + 6, ASSET_KEYS.SHADOW)
       .setDepth(27)
-      .setScale(1.7, 0.7)
-      .setAlpha(0.48);
+      .setScale(1.85, 0.75)
+      .setAlpha(0.35);
 
-    // Soft ADD underglow pulse (wet neon road spill).
-    this.underglow = scene.add.image(this.x, this.baseY + 2, ASSET_KEYS.UNDERGLOW)
+    // Soft ADD underglow pulse on top of the baked wet reflection.
+    this.underglow = scene.add.image(this.x, this.baseY + 4, ASSET_KEYS.UNDERGLOW)
       .setDepth(28)
-      .setScale(1.15, 0.95)
-      .setAlpha(0.55)
+      .setScale(1.05, 0.85)
+      .setAlpha(0.45)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     scene.tweens.add({
       targets: this.underglow,
-      alpha: { from: 0.42, to: 0.72 },
-      scaleX: { from: 1.08, to: 1.22 },
-      duration: 700,
+      alpha: { from: 0.32, to: 0.62 },
+      scaleX: { from: 0.98, to: 1.12 },
+      duration: 750,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
 
     // Front cyan spill / rear magenta spill (bidirectional robotaxi cues).
-    this.headlight = scene.add.image(this.x + 78, this.y - 34, ASSET_KEYS.HEADLIGHT)
+    this.headlight = scene.add.image(this.x + 88, this.y - 28, ASSET_KEYS.HEADLIGHT)
       .setOrigin(0, 0.5)
       .setDepth(29)
-      .setScale(0.55)
-      .setAlpha(0.32)
+      .setScale(0.5)
+      .setAlpha(0.28)
       .setBlendMode(Phaser.BlendModes.ADD);
 
-    this.taillight = scene.add.image(this.x - 72, this.y - 34, ASSET_KEYS.TAILLIGHT)
+    this.taillight = scene.add.image(this.x - 82, this.y - 28, ASSET_KEYS.TAILLIGHT)
       .setDepth(29)
-      .setScale(0.7)
-      .setAlpha(0.34)
+      .setScale(0.65)
+      .setAlpha(0.3)
       .setTint(0xff45d2)
       .setBlendMode(Phaser.BlendModes.ADD);
 
@@ -82,10 +82,10 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
     if (!this.changingLane) {
       this.y = this.baseY;
     }
-    this.shadow.setPosition(this.x + 2, this.baseY + 4);
-    this.underglow?.setPosition(this.x, this.baseY + 2);
-    this.headlight.setPosition(this.x + 78, this.y - 34);
-    this.taillight.setPosition(this.x - 72, this.y - 34);
+    this.shadow.setPosition(this.x + 2, this.baseY + 6);
+    this.underglow?.setPosition(this.x, this.baseY + 4);
+    this.headlight.setPosition(this.x + 88, this.y - 28);
+    this.taillight.setPosition(this.x - 82, this.y - 28);
   }
 
   /**
@@ -111,10 +111,10 @@ export class Zoox extends Phaser.Physics.Arcade.Sprite {
       duration: 110,
       ease: 'Sine.easeOut',
       onUpdate: () => {
-        this.shadow.setPosition(this.x + 2, this.y + 4);
-        this.underglow?.setPosition(this.x, this.y + 2);
-        this.headlight.setPosition(this.x + 78, this.y - 34);
-        this.taillight.setPosition(this.x - 72, this.y - 34);
+        this.shadow.setPosition(this.x + 2, this.y + 6);
+        this.underglow?.setPosition(this.x, this.y + 4);
+        this.headlight.setPosition(this.x + 88, this.y - 28);
+        this.taillight.setPosition(this.x - 82, this.y - 28);
       },
       onComplete: () => {
         this.changingLane = false;
