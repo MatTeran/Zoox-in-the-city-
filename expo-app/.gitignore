@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+dist/
+web-build/
+assets/www/
+.env
+.env.*
+!.env.example
+*.log
+game-www/
+assets/www/

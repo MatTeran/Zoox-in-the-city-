@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+.vite/
+
+# Expo
+expo-app/node_modules/
+expo-app/.expo/
+expo-app/dist/
+expo-app/web-build/
+expo-app/assets/www/
+expo-app/.env
+expo-app/.env.*
+
+# Native build outputs (if ejected later)
+android/
+ios/
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+expo-app/game-www/
