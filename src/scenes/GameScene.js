@@ -4,6 +4,8 @@ import {
   COLORS,
   GAME_HEIGHT,
   GAME_WIDTH,
+  LANE_Y,
+  PLAYER_X,
   ROAD_TOP,
   SCORE,
   SPEED,
@@ -118,7 +120,7 @@ export class GameScene extends Phaser.Scene {
     this.roadReflect = this.add.tileSprite(0, ROAD_TOP, GAME_WIDTH, roadH, ASSET_KEYS.ROAD_REFLECT)
       .setOrigin(0, 0)
       .setDepth(3)
-      .setAlpha(0.28)
+      .setAlpha(0.22)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     // Alias kept for any legacy references.
@@ -127,7 +129,7 @@ export class GameScene extends Phaser.Scene {
     this.skyline = this.citySf;
     this.midground = this.citySf;
 
-    // Soft lane readability without covering the painted wet road.
+    // Soft active-lane underglow only — no full-width purple bands.
     this.laneGuides = this.add.graphics().setDepth(9);
     this.drawLaneGuides();
 
@@ -152,15 +154,14 @@ export class GameScene extends Phaser.Scene {
 
   drawLaneGuides() {
     this.laneGuides.clear();
-    // Soft filled bands so current lanes are obvious on phones.
-    const bands = [
-      { y: 488, color: 0x00f0ff },
-      { y: 548, color: 0x7a3cff },
-      { y: 608, color: 0xff2bd6 },
+    // Quiet baseline: thin cyan ticks at divider Ys (between lanes).
+    const dividers = [
+      (LANE_Y[0] + LANE_Y[1]) / 2,
+      (LANE_Y[1] + LANE_Y[2]) / 2,
     ];
-    bands.forEach((b, i) => {
-      this.laneGuides.fillStyle(b.color, i === 1 ? 0.08 : 0.05);
-      this.laneGuides.fillRect(0, b.y, GAME_WIDTH, 52);
+    this.laneGuides.lineStyle(1, COLORS.ELECTRIC_CYAN, 0.12);
+    dividers.forEach((y) => {
+      this.laneGuides.lineBetween(0, y, GAME_WIDTH, y);
     });
   }
 
@@ -293,28 +294,32 @@ export class GameScene extends Phaser.Scene {
   }
 
   highlightPlayerLane() {
-    // Recolor lane bands so the active lane is brightest.
+    // Soft underglow under the active lane only — keeps wet asphalt readable.
     this.laneGuides.clear();
-    const bands = [488, 548, 608];
-    const colors = [0x00f0ff, 0x7a3cff, 0xff2bd6];
-    bands.forEach((y, i) => {
-      const active = i === this.player.laneIndex;
-      this.laneGuides.fillStyle(colors[i], active ? 0.16 : 0.05);
-      this.laneGuides.fillRect(0, y, GAME_WIDTH, 52);
-      if (active) {
-        this.laneGuides.lineStyle(2, colors[i], 0.55);
-        this.laneGuides.strokeRect(8, y + 4, GAME_WIDTH - 16, 44);
-      }
+    const dividers = [
+      (LANE_Y[0] + LANE_Y[1]) / 2,
+      (LANE_Y[1] + LANE_Y[2]) / 2,
+    ];
+    this.laneGuides.lineStyle(1, COLORS.ELECTRIC_CYAN, 0.1);
+    dividers.forEach((y) => {
+      this.laneGuides.lineBetween(0, y, GAME_WIDTH, y);
     });
+
+    const y = LANE_Y[this.player?.laneIndex ?? 1];
+    this.laneGuides.fillStyle(COLORS.ELECTRIC_CYAN, 0.1);
+    this.laneGuides.fillEllipse(PLAYER_X + 40, y + 10, 220, 36);
+    this.laneGuides.lineStyle(2, COLORS.ELECTRIC_CYAN, 0.35);
+    this.laneGuides.strokeEllipse(PLAYER_X + 40, y + 10, 220, 36);
   }
 
   drawSpeedLines() {
     this.speedLines.clear();
-    this.speedLines.lineStyle(2, COLORS.ELECTRIC_CYAN, 0.2);
-    for (let i = 0; i < 6; i += 1) {
-      const y = 470 + i * 30 + ((this.time.now / 14) % 30);
-      const x = (this.time.now * 0.35 + i * 100) % GAME_WIDTH;
-      this.speedLines.lineBetween(x, y, x + 28, y);
+    // Sparse motion ticks near curbs — don't clutter lane paint.
+    this.speedLines.lineStyle(2, COLORS.ELECTRIC_CYAN, 0.14);
+    for (let i = 0; i < 3; i += 1) {
+      const y = ROAD_TOP + 12 + i * (GAME_HEIGHT - ROAD_TOP - 28) / 2;
+      const x = (this.time.now * 0.4 + i * 180) % GAME_WIDTH;
+      this.speedLines.lineBetween(x, y, x + 22, y);
     }
   }
 

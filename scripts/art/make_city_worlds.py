@@ -28,75 +28,13 @@ def clamp(v, a=0, b=255):
 
 
 def make_road_scroll() -> Image.Image:
-    """Seamless wet neon road band matching gameplay lanes."""
-    img = Image.new("RGBA", (W, ROAD_H), (18, 20, 28, 255))
-    px = img.load()
-    rng = random.Random(7)
+    """Delegate to the dedicated wet-road painter (correct divider geometry)."""
+    import sys
 
-    # Asphalt grain + wet darker bands
-    for y in range(ROAD_H):
-        for x in range(W):
-            n = rng.randint(-8, 8)
-            shade = 18 + n + int(6 * math.sin(x / 40 + y / 18))
-            # subtle vertical neon reflections
-            if (x + y * 3) % 97 < 3:
-                shade += 10
-            px[x, y] = (clamp(shade), clamp(shade + 2), clamp(shade + 8), 255)
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from make_road_scroll import make_road_scroll as _paint
 
-    draw = ImageDraw.Draw(img)
-
-    # Neon curb lines
-    draw.rectangle([0, 2, W, 5], fill=(0, 240, 255, 200))
-    draw.rectangle([0, ROAD_H - 6, W, ROAD_H - 3], fill=(255, 43, 214, 180))
-
-    # Soft reflection blobs (tile-safe spacing)
-    glow = Image.new("RGBA", (W, ROAD_H), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glow)
-    for i, (col, y) in enumerate(
-        [
-            ((255, 140, 40, 55), 38),
-            ((0, 220, 255, 50), 98),
-            ((255, 60, 180, 45), 158),
-            ((255, 200, 80, 40), 58),
-            ((80, 120, 255, 40), 118),
-        ]
-    ):
-        for k in range(4):
-            cx = 80 + k * 320 + (i % 2) * 40
-            gd.ellipse([cx - 50, y - 12, cx + 50, y + 12], fill=col)
-    glow = glow.filter(ImageFilter.GaussianBlur(6))
-    img = Image.alpha_composite(img, glow)
-    draw = ImageDraw.Draw(img)
-
-    # Dashed lane lines — period divides width evenly for seamless tiling
-    dash = 36
-    gap = 28
-    period = dash + gap
-    assert W % period == 0 or True
-    # Adjust period to divide 1280: 40+24=64, 1280/64=20
-    dash, gap = 40, 24
-    period = dash + gap
-    for ly in (50, 110, 170):
-        y = ly
-        x = 0
-        while x < W:
-            draw.rectangle([x, y, min(x + dash - 1, W - 1), y + 3], fill=(235, 240, 255, 230))
-            x += period
-
-    # Edge blend for seamless loop (left/right average)
-    arr = img.load()
-    blend = 24
-    for x in range(blend):
-        t = x / blend
-        xr = W - blend + x
-        for y in range(ROAD_H):
-            a = arr[x, y]
-            b = arr[xr, y]
-            # pull edges toward each other
-            arr[x, y] = tuple(int(a[i] * (1 - t * 0.5) + b[i] * (t * 0.5)) for i in range(4))
-            arr[xr, y] = tuple(int(b[i] * (1 - (1 - t) * 0.5) + a[i] * ((1 - t) * 0.5)) for i in range(4))
-
-    return img
+    return _paint()
 
 
 def prep_sf_city() -> Image.Image:
